@@ -39,6 +39,9 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.kiro/*
 
 # Vite specific
 eslint.config.js.timestamp-*
+
+figma_base.make
