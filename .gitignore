@@ -11,6 +11,7 @@
 /dist
 /out
 /.next
+*.tsbuildinfo
 
 # Environment Variables (CRITICAL: Never commit secrets)
 .env
