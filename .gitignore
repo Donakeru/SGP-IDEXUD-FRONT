@@ -46,3 +46,4 @@ lerna-debug.log*
 eslint.config.js.timestamp-*
 
 figma_base.make
+figma_base/*
