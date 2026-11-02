@@ -57,16 +57,16 @@ function Field({
 }: FieldProps) {
   return (
     <label className={`flex flex-col gap-1.5 ${wide ? 'md:col-span-2' : ''}`}>
-      <span className="flex items-center gap-2 text-[10px] font-semibold text-[#172033]">
+      <span className="flex items-center gap-2 text-[10px] font-semibold text-ink">
         {label}
-        {required && <strong className="text-[#a33a3a]">*</strong>}
+        {required && <strong className="text-danger">*</strong>}
         {optional && (
-          <em className="font-normal not-italic text-[#8a94a6]">{optional}</em>
+          <em className="font-normal not-italic text-muted">{optional}</em>
         )}
       </span>
       {children}
       {(error || help) && (
-        <small className={`text-[8px] leading-3 ${error ? 'text-[#a33a3a]' : 'text-[#667085]'}`}>
+        <small className={`text-[8px] leading-3 ${error ? 'text-danger' : 'text-muted'}`}>
           {error ?? help}
         </small>
       )}
@@ -86,16 +86,16 @@ function SectionCard({
   children: ReactNode
 }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-[#dde2ea] bg-white shadow-[0_4px_14px_rgba(23,32,51,0.05)]">
-      <header className="flex min-h-[68px] items-center gap-3 border-b border-[#e9edf2] px-4 py-3.5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#edf3f9] text-xs font-bold text-[#1f3a5f]">
+    <section className="overflow-hidden rounded-lg border border-line bg-white shadow-[0_4px_14px_rgba(38,38,38,0.05)]">
+      <header className="flex min-h-[68px] items-center gap-3 border-b border-line-soft px-4 py-3.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary-strong">
           {number}
         </span>
         <div>
-          <h2 className="text-[13px] font-semibold leading-[19px] text-[#172033]">
+          <h2 className="text-[13px] font-semibold leading-[19px] text-ink">
             {title}
           </h2>
-          <p className="mt-px text-[9px] leading-[14px] text-[#667085]">
+          <p className="mt-px text-[9px] leading-[14px] text-muted">
             {description}
           </p>
         </div>
@@ -106,8 +106,8 @@ function SectionCard({
 }
 
 function inputClass(error?: string) {
-  return `min-h-[38px] w-full rounded-md border bg-white px-2.5 text-[10px] text-[#172033] outline-none transition-colors placeholder:text-[#8a94a6] focus:border-[#1f3a5f] focus:ring-4 focus:ring-[#1f3a5f]/10 ${
-    error ? 'border-[#a33a3a] bg-[#fffafa]' : 'border-[#dde2ea]'
+  return `min-h-[38px] w-full rounded-md border bg-white px-2.5 text-[10px] text-ink outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10 ${
+    error ? 'border-danger bg-danger-subtle' : 'border-line'
   }`
 }
 
@@ -269,27 +269,27 @@ export default function NewProposal() {
 
   return (
     <div className="mx-auto w-full max-w-[1216px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10">
-      <div className="mb-5 flex items-center gap-1.5 text-[10px] text-[#667085]">
+      <div className="mb-5 flex items-center gap-1.5 text-[10px] text-muted">
         <span>Mis propuestas</span>
         <ChevronIcon />
-        <strong className="font-semibold text-[#1f3a5f]">Nueva propuesta</strong>
+        <strong className="font-semibold text-primary-strong">Nueva propuesta</strong>
       </div>
 
       <div className="mb-6">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#667085]">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
           Registro de propuesta
         </span>
-        <h1 className="mt-1 text-[25px] font-semibold leading-[33px] tracking-[-0.025em] text-[#172033]">
+        <h1 className="mt-1 text-[25px] font-semibold leading-[33px] tracking-[-0.025em] text-ink">
           Registrar nueva propuesta
         </h1>
-        <p className="mt-1 max-w-3xl text-xs leading-5 text-[#667085]">
+        <p className="mt-1 max-w-3xl text-xs leading-5 text-muted">
           Completa la información requerida. La Asistente de Dirección revisará la propuesta antes de continuar el proceso.
         </p>
       </div>
 
       {submitAttempted && visibleErrorCount > 0 && (
         <div
-          className="mb-4 flex items-start gap-3 rounded-lg border border-[#efcaca] bg-[#fffafa] p-3.5 text-[#a33a3a]"
+          className="mb-4 flex items-start gap-3 rounded-lg border border-danger-line bg-danger-subtle p-3.5 text-danger"
           role="alert"
         >
           <WarningIcon />
@@ -463,7 +463,7 @@ export default function NewProposal() {
                 onChange={(event) => updateField('description', event.target.value)}
                 placeholder="Describe el propósito, alcance y resultados esperados de la propuesta."
               />
-              <span className="flex items-center justify-between gap-3 text-[8px] text-[#667085]">
+              <span className="flex items-center justify-between gap-3 text-[8px] text-muted">
                 <span>{shouldShowError('description') ? errors.description : ' '}</span>
                 <span>{values.description.length} / 1000</span>
               </span>
@@ -491,23 +491,23 @@ export default function NewProposal() {
                 multiple
               />
               {proposalFiles.length > 0 && (
-                <p className="mt-2 text-[8px] text-[#667085]">
+                <p className="mt-2 text-[8px] text-muted">
                   {proposalFiles.length} archivo{proposalFiles.length === 1 ? '' : 's'} válido{proposalFiles.length === 1 ? '' : 's'} seleccionado{proposalFiles.length === 1 ? '' : 's'}.
                 </p>
               )}
             </div>
             {isFaculty && (
-              <div className="border-t border-[#e9edf2] pt-3.5 md:col-span-2">
+              <div className="border-t border-line-soft pt-3.5 md:col-span-2">
                 <div className="mb-2.5 flex items-start justify-between gap-3">
                   <div>
-                    <strong className="text-[10px] font-semibold text-[#172033]">
-                      Aval de la facultad <span className="text-[#a33a3a]">*</span>
+                    <strong className="text-[10px] font-semibold text-ink">
+                      Aval de la facultad <span className="text-danger">*</span>
                     </strong>
-                    <p className="mt-0.5 text-[8px] leading-3 text-[#667085]">
+                    <p className="mt-0.5 text-[8px] leading-3 text-muted">
                       Las propuestas originadas en una facultad requieren su aval.
                     </p>
                   </div>
-                  <span className="rounded-full bg-[#fff4dc] px-1.5 py-1 text-[8px] font-semibold text-[#8a5800]">
+                  <span className="rounded-full bg-warning-soft px-1.5 py-1 text-[8px] font-semibold text-warning">
                     Obligatorio
                   </span>
                 </div>
@@ -519,21 +519,21 @@ export default function NewProposal() {
                   onFilesChange={setFacultyFiles}
                 />
                 {shouldShowError('facultyApproval') && errors.facultyApproval && (
-                  <p className="mt-1.5 text-[8px] text-[#a33a3a]">{errors.facultyApproval}</p>
+                  <p className="mt-1.5 text-[8px] text-danger">{errors.facultyApproval}</p>
                 )}
               </div>
             )}
           </SectionCard>
 
           <label
-            className={`flex items-start gap-2.5 rounded-lg border p-3.5 text-[9px] leading-[15px] text-[#4e5a6d] ${
+            className={`flex items-start gap-2.5 rounded-lg border p-3.5 text-[9px] leading-[15px] text-body ${
               shouldShowError('privacy')
-                ? 'border-[#a33a3a] bg-[#fffafa]'
-                : 'border-[#dde2ea] bg-white'
+                ? 'border-danger bg-danger-subtle'
+                : 'border-line bg-white'
             }`}
           >
             <input
-              className="mt-px size-[15px] shrink-0 accent-[#1f3a5f]"
+              className="mt-px size-[15px] shrink-0 accent-primary"
               type="checkbox"
               checked={privacyAccepted}
               onChange={(event) => {
@@ -543,19 +543,19 @@ export default function NewProposal() {
             />
             <span>
               Autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012. Consulta la{' '}
-              <button className="font-semibold text-[#1f3a5f] underline" type="button">
+              <button className="font-semibold text-primary-strong underline" type="button">
                 política de tratamiento de datos
               </button>
-              . <strong className="text-[#a33a3a]">*</strong>
+              . <strong className="text-danger">*</strong>
               {shouldShowError('privacy') && errors.privacy && (
-                <span className="mt-1 block text-[8px] text-[#a33a3a]">{errors.privacy}</span>
+                <span className="mt-1 block text-[8px] text-danger">{errors.privacy}</span>
               )}
             </span>
           </label>
 
-          <div className="sticky bottom-0 z-10 flex min-h-16 flex-col items-stretch justify-between gap-3 rounded-lg border border-[#dde2ea] bg-white/95 p-3 shadow-[0_-6px_20px_rgba(23,32,51,0.07)] backdrop-blur sm:flex-row sm:items-center">
+          <div className="sticky bottom-0 z-10 flex min-h-16 flex-col items-stretch justify-between gap-3 rounded-lg border border-line bg-white/95 p-3 shadow-[0_-6px_20px_rgba(38,38,38,0.07)] backdrop-blur sm:flex-row sm:items-center">
             <button
-              className="border-0 bg-transparent px-2.5 py-2 text-left text-[10px] font-semibold text-[#667085] hover:text-[#1f3a5f]"
+              className="border-0 bg-transparent px-2.5 py-2 text-left text-[10px] font-semibold text-muted hover:text-primary-strong"
               type="button"
               onClick={() => navigate('/dashboard')}
             >
@@ -563,14 +563,14 @@ export default function NewProposal() {
             </button>
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
-                className="h-[38px] rounded-md border border-[#dde2ea] bg-white px-3.5 text-[10px] font-semibold text-[#4f5d72] hover:bg-[#edf3f9]"
+                className="h-[38px] rounded-md border border-line bg-white px-3.5 text-[10px] font-semibold text-body hover:bg-primary-soft"
                 type="button"
                 onClick={() => setNotification('draft')}
               >
                 Guardar borrador
               </button>
               <button
-                className="inline-flex h-[38px] items-center justify-center gap-2 rounded-md bg-[#1f3a5f] px-3.5 text-[10px] font-semibold text-white shadow-[0_2px_4px_rgba(31,58,95,0.18)] hover:bg-[#172e4d]"
+                className="inline-flex h-[38px] items-center justify-center gap-2 rounded-md bg-primary px-3.5 text-[10px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] hover:bg-primary-hover"
                 type="submit"
               >
                 <PlusIcon />
@@ -580,42 +580,42 @@ export default function NewProposal() {
           </div>
         </form>
 
-        <aside className="sticky top-4 hidden overflow-hidden rounded-lg border border-[#dde2ea] bg-white shadow-[0_4px_14px_rgba(23,32,51,0.05)] lg:block">
-          <div className="flex items-center gap-2.5 border-b border-[#e9edf2] p-3.5">
-            <span className="grid size-[34px] place-items-center rounded-lg bg-[#edf3f9] text-[#1f3a5f]">
+        <aside className="sticky top-4 hidden overflow-hidden rounded-lg border border-line bg-white shadow-[0_4px_14px_rgba(38,38,38,0.05)] lg:block">
+          <div className="flex items-center gap-2.5 border-b border-line-soft p-3.5">
+            <span className="grid size-[34px] place-items-center rounded-lg bg-primary-soft text-primary-strong">
               <CheckIcon />
             </span>
             <div>
-              <strong className="text-[10px] font-semibold text-[#172033]">
+              <strong className="text-[10px] font-semibold text-ink">
                 Información del registro
               </strong>
-              <p className="mt-px text-[8px] text-[#667085]">Datos generados por el sistema</p>
+              <p className="mt-px text-[8px] text-muted">Datos generados por el sistema</p>
             </div>
           </div>
           <dl className="px-3.5 py-1">
-            <div className="border-b border-[#e9edf2] py-2.5">
-              <dt className="text-[8px] text-[#667085]">Radicado</dt>
-              <dd className="mt-1 text-[9px] font-semibold text-[#172033]">Se asignará al enviar</dd>
+            <div className="border-b border-line-soft py-2.5">
+              <dt className="text-[8px] text-muted">Radicado</dt>
+              <dd className="mt-1 text-[9px] font-semibold text-ink">Se asignará al enviar</dd>
             </div>
-            <div className="border-b border-[#e9edf2] py-2.5">
-              <dt className="text-[8px] text-[#667085]">Estado</dt>
+            <div className="border-b border-line-soft py-2.5">
+              <dt className="text-[8px] text-muted">Estado</dt>
               <dd className="mt-1">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#edf3f9] px-2 py-1 text-[8px] font-semibold text-[#1f3a5f]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-2 py-1 text-[8px] font-semibold text-primary-strong">
                   <span className="size-[5px] rounded-full bg-current" />
                   Registrada
                 </span>
               </dd>
             </div>
-            <div className="border-b border-[#e9edf2] py-2.5">
-              <dt className="text-[8px] text-[#667085]">Postulante</dt>
-              <dd className="mt-1 text-[9px] font-semibold text-[#172033]">Mariana López</dd>
+            <div className="border-b border-line-soft py-2.5">
+              <dt className="text-[8px] text-muted">Postulante</dt>
+              <dd className="mt-1 text-[9px] font-semibold text-ink">Mariana López</dd>
             </div>
             <div className="py-2.5">
-              <dt className="text-[8px] text-[#667085]">Fecha de registro</dt>
-              <dd className="mt-1 text-[9px] font-semibold text-[#172033]">12 oct 2026</dd>
+              <dt className="text-[8px] text-muted">Fecha de registro</dt>
+              <dd className="mt-1 text-[9px] font-semibold text-ink">12 oct 2026</dd>
             </div>
           </dl>
-          <div className="m-3 rounded-md bg-[#edf3f9] p-2.5 text-[8px] leading-[13px] text-[#4e5f74]">
+          <div className="m-3 rounded-md bg-primary-soft p-2.5 text-[8px] leading-[13px] text-body">
             Podrás guardar la propuesta como borrador y continuar más adelante.
           </div>
         </aside>
@@ -623,31 +623,31 @@ export default function NewProposal() {
 
       {confirmationOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-[#172033]/50 p-5"
+          className="fixed inset-0 z-50 grid place-items-center bg-ink/50 p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirmation-title"
         >
-          <div className="w-full max-w-[420px] rounded-lg bg-white p-6 text-center shadow-[0_18px_48px_rgba(23,32,51,0.22)]">
-            <span className="mx-auto mb-3.5 grid size-[46px] place-items-center rounded-full bg-[#edf3f9] text-[#1f3a5f]">
+          <div className="w-full max-w-[420px] rounded-lg bg-white p-6 text-center shadow-[0_18px_48px_rgba(38,38,38,0.22)]">
+            <span className="mx-auto mb-3.5 grid size-[46px] place-items-center rounded-full bg-primary-soft text-primary-strong">
               <CheckIcon />
             </span>
-            <h2 id="confirmation-title" className="text-[17px] font-semibold leading-6 text-[#172033]">
+            <h2 id="confirmation-title" className="text-[17px] font-semibold leading-6 text-ink">
               ¿Enviar propuesta?
             </h2>
-            <p className="mx-auto mt-2 max-w-[340px] text-[10px] leading-4 text-[#667085]">
+            <p className="mx-auto mt-2 max-w-[340px] text-[10px] leading-4 text-muted">
               Una vez enviada, la Asistente de Dirección la revisará. Podrás consultar el avance desde “Mis propuestas”.
             </p>
             <div className="mt-5 flex justify-center gap-2">
               <button
-                className="h-[38px] rounded-md border border-[#dde2ea] bg-white px-3.5 text-[10px] font-semibold text-[#4f5d72] hover:bg-[#edf3f9]"
+                className="h-[38px] rounded-md border border-line bg-white px-3.5 text-[10px] font-semibold text-body hover:bg-primary-soft"
                 type="button"
                 onClick={() => setConfirmationOpen(false)}
               >
                 Volver al formulario
               </button>
               <button
-                className="h-[38px] rounded-md bg-[#1f3a5f] px-3.5 text-[10px] font-semibold text-white hover:bg-[#172e4d]"
+                className="h-[38px] rounded-md bg-primary px-3.5 text-[10px] font-semibold text-white hover:bg-primary-hover"
                 type="button"
                 onClick={confirmSubmission}
               >
@@ -660,17 +660,17 @@ export default function NewProposal() {
 
       {notification && (
         <div
-          className="fixed bottom-5 right-5 z-40 flex w-[min(390px,calc(100vw-40px))] items-center gap-2.5 rounded-lg border border-[#b9dfcb] bg-white p-3 shadow-[0_12px_32px_rgba(23,32,51,0.16)]"
+          className="fixed bottom-5 right-5 z-40 flex w-[min(390px,calc(100vw-40px))] items-center gap-2.5 rounded-lg border border-success-line bg-white p-3 shadow-[0_12px_32px_rgba(38,38,38,0.16)]"
           role="status"
         >
-          <span className="grid size-[34px] shrink-0 place-items-center rounded-full bg-[#eaf7f0] text-[#176b47]">
+          <span className="grid size-[34px] shrink-0 place-items-center rounded-full bg-success-soft text-success">
             <CheckIcon />
           </span>
           <div className="min-w-0 flex-1">
-            <strong className="text-[10px] font-semibold text-[#176b47]">
+            <strong className="text-[10px] font-semibold text-success">
               {notification === 'success' ? 'Propuesta enviada correctamente' : 'Borrador guardado'}
             </strong>
-            <p className="mt-0.5 text-[8px] text-[#667085]">
+            <p className="mt-0.5 text-[8px] text-muted">
               {notification === 'success'
                 ? 'Se asignó el radicado PROP-2026-015.'
                 : 'Podrás continuar editando la propuesta más adelante.'}
@@ -678,7 +678,7 @@ export default function NewProposal() {
           </div>
           {notification === 'success' && (
             <button
-              className="rounded-md border-0 bg-[#edf3f9] px-2 py-1.5 text-[8px] font-semibold text-[#1f3a5f]"
+              className="rounded-md border-0 bg-primary-soft px-2 py-1.5 text-[8px] font-semibold text-primary-strong"
               type="button"
               onClick={() => navigate('/dashboard/proposals')}
             >

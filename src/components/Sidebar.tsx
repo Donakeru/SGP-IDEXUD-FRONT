@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 type SidebarIconName =
   | 'dashboard'
   | 'folder'
+  | 'review'
   | 'users'
   | 'report'
   | 'building'
@@ -29,12 +30,15 @@ const principalItems: SidebarItem[] = [
     badge: '24',
     path: '/dashboard/proposals',
   },
-  { label: 'Comités', icon: 'users', badge: '4' },
-  { label: 'Reportes', icon: 'report' },
+  { label: 'Revisión', icon: 'review', path: '/dashboard/review' },
+  // Labels temporales del mockup (depronto se usan despues)
+  //{ label: 'Comités', icon: 'users', badge: '4' },
+  //{ label: 'Reportes', icon: 'report' },
 ]
 
 const administrationItems: SidebarItem[] = [
-  { label: 'Entidades', icon: 'building' },
+  //Label temporal quizas posible uso
+  //{ label: 'Entidades', icon: 'building' },
   { label: 'Usuarios y roles', icon: 'users' },
   { label: 'Configuración', icon: 'settings' },
 ]
@@ -50,6 +54,13 @@ const iconPaths: Record<SidebarIconName, ReactNode> = {
   ),
   folder: (
     <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z" />
+  ),
+  review: (
+    <>
+      <path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2" />
+      <rect x="9" y="2.5" width="6" height="3.5" rx="1" />
+      <path d="m9 14 2 2 4-4" />
+    </>
   ),
   users: (
     <>
@@ -107,7 +118,7 @@ function SidebarGroup({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="px-2.5 pb-1.5 text-[9px] font-bold uppercase tracking-[0.09em] text-[#8a94a6]">
+      <span className="px-2.5 pb-1.5 text-[9px] font-bold uppercase tracking-[0.09em] text-muted">
         {label}
       </span>
       {items.map((item) => {
@@ -115,10 +126,10 @@ function SidebarGroup({
 
         return (
           <button
-            className={`relative flex h-[42px] w-full items-center gap-[11px] rounded-[7px] border-0 px-[11px] text-left text-xs font-medium transition-colors hover:bg-[#f5f7fa] hover:text-[#1f3a5f] ${
+            className={`relative flex h-[42px] w-full items-center gap-[11px] rounded-[7px] border-0 px-[11px] text-left text-xs font-medium transition-colors hover:bg-wash hover:text-primary-strong ${
               isActive
-                ? 'font-semibold text-[#1f3a5f] before:absolute before:left-0 before:h-6 before:w-[3px] before:rounded-r-[3px] before:bg-[#1f3a5f]'
-                : 'text-[#58657a]'
+                ? 'font-semibold text-primary-strong before:absolute before:left-0 before:h-6 before:w-[3px] before:rounded-r-[3px] before:bg-primary'
+                : 'text-body'
             }`}
             key={item.label}
             type="button"
@@ -131,8 +142,8 @@ function SidebarGroup({
               <small
                 className={`grid h-5 min-w-[22px] place-items-center rounded-[10px] px-1.5 text-[9px] font-bold ${
                   isActive
-                    ? 'bg-[#dbe7f3] text-[#1f3a5f]'
-                    : 'bg-[#edf0f4] text-[#667085]'
+                    ? 'bg-primary-tint text-primary-strong'
+                    : 'bg-chip text-muted'
                 }`}
               >
                 {item.badge}
@@ -153,7 +164,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       ? 'Inicio'
       : pathname.startsWith('/dashboard/proposals')
         ? 'Propuestas'
-        : ''
+        : pathname.startsWith('/dashboard/review')
+          ? 'Revisión'
+          : ''
 
   const handleItemClick = (path?: string) => {
     if (path) {
@@ -166,7 +179,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside
       id="dashboard-sidebar"
-      className={`fixed left-0 top-[72px] z-50 flex h-[calc(100vh-72px)] w-56 shrink-0 flex-col border-r border-[#dde2ea] bg-white px-3.5 pb-[110px] pt-[22px] transition-transform duration-200 ease-out md:relative md:top-auto md:z-auto md:h-auto md:min-h-[calc(100vh-72px)] md:translate-x-0 ${
+      className={`fixed left-0 top-[72px] z-50 flex h-[calc(100vh-72px)] w-56 shrink-0 flex-col border-r border-line bg-white px-3.5 pb-[110px] pt-[22px] transition-transform duration-200 ease-out md:relative md:top-auto md:z-auto md:h-auto md:min-h-[calc(100vh-72px)] md:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Navegación del dashboard"
@@ -186,21 +199,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
       </div>
 
-      <div className="absolute bottom-[42px] left-3.5 right-3.5 flex items-center gap-2 rounded-lg border border-[#dbe3ec] bg-[#f7f9fb] p-3">
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#1f3a5f] text-xs font-bold text-white">
+      <div className="absolute bottom-[42px] left-3.5 right-3.5 flex items-center gap-2 rounded-lg border border-line bg-canvas p-3">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">
           ?
         </span>
         <div className="flex min-w-0 flex-col">
-          <strong className="text-[9px] leading-[14px] text-[#172033]">
+          <strong className="text-[9px] leading-[14px] text-ink">
             ¿Necesitas ayuda?
           </strong>
-          <span className="whitespace-nowrap text-[8px] leading-[13px] text-[#667085]">
+          <span className="whitespace-nowrap text-[8px] leading-[13px] text-muted">
             Consulta la guía del sistema
           </span>
         </div>
       </div>
 
-      <span className="absolute bottom-[15px] left-0 right-0 text-center text-[8px] text-[#a0a8b5]">
+      <span className="absolute bottom-[15px] left-0 right-0 text-center text-[8px] text-muted">
         IDEXUD Admin · DEVELOP PHASE
       </span>
     </aside>

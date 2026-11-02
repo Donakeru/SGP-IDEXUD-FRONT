@@ -31,7 +31,7 @@ export default function DashboardLayout() {
       <div className="relative flex flex-1">
         {isSidebarOpen && (
           <button
-            className="fixed inset-0 z-40 bg-slate-950/40 md:hidden"
+            className="fixed inset-0 z-40 bg-ink/40 md:hidden"
             type="button"
             aria-label="Cerrar menú de navegación"
             onClick={() => setIsSidebarOpen(false)}

@@ -122,19 +122,19 @@ export default function Home() {
     <div className="mx-auto w-full max-w-[1216px] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
       <div className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#667085]">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
             Resumen general
           </span>
-          <h1 className="mt-1 text-[25px] font-semibold leading-[33px] tracking-[-0.025em] text-[#172033]">
+          <h1 className="mt-1 text-[25px] font-semibold leading-[33px] tracking-[-0.025em] text-ink">
             Buenos días, Mariana
           </h1>
-          <p className="mt-1 text-xs text-[#667085]">
+          <p className="mt-1 text-xs text-muted">
             Este es el estado de las propuestas institucionales hoy.
           </p>
         </div>
 
         <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#1f3a5f] px-4 text-[11px] font-semibold text-white shadow-[0_2px_4px_rgba(31,58,95,0.18)] transition-colors hover:bg-[#172e4d]"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-[11px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] transition-colors hover:bg-primary-hover"
           to="/dashboard/proposals/new"
         >
           <PlusIcon />

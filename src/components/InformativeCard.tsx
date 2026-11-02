@@ -21,17 +21,17 @@ type InformativeCardProps = {
 }
 
 const iconStyles: Record<InformativeCardVariant, string> = {
-  primary: 'bg-[#edf3f9] text-[#1f3a5f]',
-  amber: 'bg-[#fff4dc] text-[#8a5800]',
-  green: 'bg-[#eaf7f0] text-[#176b47]',
-  slate: 'bg-[#edf0f4] text-[#52677f]',
+  primary: 'bg-primary-soft text-primary-strong',
+  amber: 'bg-warning-soft text-warning',
+  green: 'bg-success-soft text-success',
+  slate: 'bg-chip text-body',
 }
 
 const trendStyles: Record<InformativeTrendTone, string> = {
-  success: 'bg-[#eaf7f0] text-[#176b47]',
-  warning: 'bg-[#fff4dc] text-[#8a5800]',
-  danger: 'bg-[#fdecec] text-[#a33a3a]',
-  neutral: 'bg-[#edf0f4] text-[#647085]',
+  success: 'bg-success-soft text-success',
+  warning: 'bg-warning-soft text-warning',
+  danger: 'bg-danger-soft text-danger',
+  neutral: 'bg-chip text-body',
 }
 
 export default function InformativeCard({
@@ -48,7 +48,7 @@ export default function InformativeCard({
 
         return (
           <article
-            className="flex min-h-[132px] flex-col rounded-lg border border-[#dde2ea] bg-white p-4 shadow-[0_4px_14px_rgba(23,32,51,0.05)]"
+            className="flex min-h-[132px] flex-col rounded-lg border border-line bg-white p-4 shadow-[0_4px_14px_rgba(38,38,38,0.05)]"
             key={card.id}
             aria-label={`${card.value} ${card.label}`}
           >
@@ -67,10 +67,10 @@ export default function InformativeCard({
                 </span>
               )}
             </div>
-            <strong className="text-[25px] leading-[29px] tracking-[-0.03em] text-[#172033]">
+            <strong className="text-[25px] leading-[29px] tracking-[-0.03em] text-ink">
               {card.value}
             </strong>
-            <span className="mt-0.5 text-[10px] text-[#667085]">{card.label}</span>
+            <span className="mt-0.5 text-[10px] text-muted">{card.label}</span>
           </article>
         )
       })}

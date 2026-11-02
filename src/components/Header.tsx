@@ -9,14 +9,14 @@ function Brand() {
       className="flex w-auto shrink-0 items-center gap-3 lg:w-[276px]"
       aria-label="IDEXUD Universidad Distrital"
     >
-      <div className="grid size-10 place-items-center rounded-lg bg-[#1f3a5f] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]">
+      <div className="grid size-10 place-items-center rounded-lg bg-primary text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]">
         <span className="text-[13px] font-bold tracking-[-0.4px]">ID</span>
       </div>
       <div className="flex flex-col gap-px">
-        <strong className="text-[15px] leading-[18px] tracking-[0.04em] text-[#1f3a5f]">
+        <strong className="text-[15px] leading-[18px] tracking-[0.04em] text-primary-strong">
           SGP - IDEXUD
         </strong>
-        <span className="text-[10px] uppercase leading-[14px] tracking-[0.04em] text-[#667085]">
+        <span className="text-[10px] uppercase leading-[14px] tracking-[0.04em] text-muted">
           Universidad Distrital
         </span>
       </div>
@@ -59,10 +59,10 @@ export default function Header({
   onMenuClick,
 }: HeaderProps) {
   return (
-    <header className="relative z-30 h-[72px] shrink-0 border-b border-[#dde2ea] bg-white">
+    <header className="relative z-30 h-[72px] shrink-0 border-b border-line bg-white">
       <div className="flex h-full items-center px-4 sm:px-6 lg:px-12">
         <button
-          className="mr-3 grid size-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[#1f3a5f] transition-colors hover:bg-[#f5f7fa] md:hidden"
+          className="mr-3 grid size-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-primary-strong transition-colors hover:bg-wash md:hidden"
           type="button"
           aria-label={isSidebarOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
           aria-controls="dashboard-sidebar"
@@ -74,28 +74,28 @@ export default function Header({
 
         <Brand />
 
-        <div className="hidden flex-col border-l border-[#e9edf2] pl-6 md:flex">
-          <span className="text-[10px] font-medium uppercase leading-[14px] tracking-[0.08em] text-[#667085]">
+        <div className="hidden flex-col border-l border-line-soft pl-6 md:flex">
+          <span className="text-[10px] font-medium uppercase leading-[14px] tracking-[0.08em] text-muted">
             Gestión institucional
           </span>
-          <h1 className="text-[13px] font-semibold leading-[18px] text-[#172033]">
+          <h1 className="text-[13px] font-semibold leading-[18px] text-ink">
             Propuestas y convenios
           </h1>
         </div>
 
         <button
-          className="ml-auto flex items-center gap-2.5 border-0 border-l border-[#e9edf2] bg-transparent py-1.5 pl-4 text-[#667085]"
+          className="ml-auto flex items-center gap-2.5 border-0 border-l border-line-soft bg-transparent py-1.5 pl-4 text-muted"
           type="button"
           aria-label="Abrir menú de Mariana López"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#1f3a5f] text-xs font-bold text-white">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">
             ML
           </span>
           <span className="hidden min-w-[142px] flex-col text-left sm:flex">
-            <strong className="text-[13px] leading-[18px] text-[#172033]">
+            <strong className="text-[13px] leading-[18px] text-ink">
               Mariana López
             </strong>
-            <span className="text-[11px] leading-4 text-[#667085]">
+            <span className="text-[11px] leading-4 text-muted">
               Coordinación IDEXUD
             </span>
           </span>

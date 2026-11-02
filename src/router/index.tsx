@@ -3,6 +3,7 @@ import DashboardLayout from '../layout/DashboardLayout'
 import NewProposal from '../pages/dashboard/NewProposal'
 import Home from '../pages/dashboard/Home'
 import Proposal from '../pages/dashboard/Proposal'
+import Review from '../pages/dashboard/Review'
 
 export default function AppRouter() {
   return (
@@ -13,6 +14,7 @@ export default function AppRouter() {
           <Route index element={<Home />} />
           <Route path="proposals/new" element={<NewProposal />} />
           <Route path="proposals" element={<Proposal />} />
+          <Route path="review" element={<Review />} />
         </Route>
       </Routes>
     </BrowserRouter>

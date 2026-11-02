@@ -199,10 +199,10 @@ export default function FileInput({
       />
 
       <div
-        className={`flex min-h-[100px] cursor-pointer items-center justify-center gap-[11px] rounded-lg border-[1.5px] border-dashed px-3.5 text-left text-[#1f3a5f] transition-colors ${
+        className={`flex min-h-[100px] cursor-pointer items-center justify-center gap-[11px] rounded-lg border-[1.5px] border-dashed px-3.5 text-left text-primary-strong transition-colors ${
           isDragging
-            ? 'border-[#1f3a5f] bg-[#edf3f9]'
-            : 'border-[#9eabc0] bg-[#f8fafc] hover:border-[#1f3a5f] hover:bg-[#edf3f9]'
+            ? 'border-primary bg-primary-soft'
+            : 'border-line-strong bg-canvas hover:border-primary hover:bg-primary-soft'
         }`}
         role="button"
         tabIndex={0}
@@ -221,20 +221,20 @@ export default function FileInput({
           }
         }}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-full border border-[#dde2ea] bg-white text-[#1f3a5f]">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-white text-primary-strong">
           <UploadIcon />
         </span>
         <span className="flex flex-col gap-1">
-          <strong className="text-[10px] font-semibold text-[#1f3a5f]">
+          <strong className="text-[10px] font-semibold text-primary-strong">
             {isUploading ? `Cargando archivos… ${normalizedProgress}%` : 'Arrastra archivos o haz clic para cargar'}
           </strong>
-          <small className="text-[8px] text-[#667085]">
+          <small className="text-[8px] text-muted">
             {acceptedFormatsLabel} · Máximo {maxSizeMb} MB por archivo
           </small>
           {isUploading && (
-            <span className="mt-1 h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-[#dbe3ec]">
+            <span className="mt-1 h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-line">
               <span
-                className="block h-full rounded-full bg-[#1f3a5f] transition-[width] duration-200"
+                className="block h-full rounded-full bg-primary transition-[width] duration-200"
                 style={{ width: `${normalizedProgress}%` }}
               />
             </span>
@@ -251,27 +251,27 @@ export default function FileInput({
               <div
                 className={`flex min-h-[54px] items-center gap-[9px] rounded-[7px] border px-2.5 py-2 ${
                   hasError
-                    ? 'border-[#efcaca] bg-[#fffafa]'
-                    : 'border-[#dde2ea] bg-white'
+                    ? 'border-danger-line bg-danger-subtle'
+                    : 'border-line bg-white'
                 }`}
                 key={item.id}
               >
                 <span
                   className={`grid size-8 shrink-0 place-items-center rounded-md ${
                     hasError
-                      ? 'bg-[#fdecec] text-[#a33a3a]'
-                      : 'bg-[#edf3f9] text-[#1f3a5f]'
+                      ? 'bg-danger-soft text-danger'
+                      : 'bg-primary-soft text-primary-strong'
                   }`}
                 >
                   {hasError ? <WarningIcon /> : <FileIcon />}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-[#172033]">
+                  <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-ink">
                     {item.file.name}
                   </strong>
                   <small
                     className={`text-[8px] ${
-                      hasError ? 'text-[#a33a3a]' : 'text-[#667085]'
+                      hasError ? 'text-danger' : 'text-muted'
                     }`}
                   >
                     {hasError
@@ -279,9 +279,9 @@ export default function FileInput({
                       : `${formatFileType(item.file)} · ${formatFileSize(item.file.size)}${isUploading ? ` · Cargando ${normalizedProgress}%` : ''}`}
                   </small>
                   {!hasError && isUploading && (
-                    <span className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#e7ebf0]">
+                    <span className="mt-1 h-1 w-full overflow-hidden rounded-full bg-line">
                       <span
-                        className="block h-full rounded-full bg-[#1f3a5f] transition-[width] duration-200"
+                        className="block h-full rounded-full bg-primary transition-[width] duration-200"
                         style={{ width: `${normalizedProgress}%` }}
                       />
                     </span>
@@ -289,7 +289,7 @@ export default function FileInput({
                 </span>
                 <button
                   className={`shrink-0 border-0 bg-transparent p-1 text-[8px] font-semibold hover:underline ${
-                    hasError ? 'text-[#a33a3a]' : 'text-[#1f3a5f]'
+                    hasError ? 'text-danger' : 'text-primary-strong'
                   }`}
                   type="button"
                   onClick={() => removeFile(item.id)}
