@@ -1,4 +1,11 @@
+import {
+  CheckIcon,
+  DocumentTextIcon,
+  PaperAirplaneIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import TextArea from '../../components/forms/TextArea'
 
 /**
  * Bandeja de revisión para el perfil administrativo/revisor.
@@ -380,68 +387,6 @@ function getForwardRequirements(proposal: ReviewProposal) {
   return requirements
 }
 
-function CheckIcon({ className = 'size-4' }: { className?: string }) {
-  return (
-    <svg
-      className={`${className} shrink-0`}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
-    </svg>
-  )
-}
-
-function CloseIcon() {
-  return (
-    <svg
-      className="size-4 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" d="M6 6l12 12M18 6 6 18" />
-    </svg>
-  )
-}
-
-function SendIcon() {
-  return (
-    <svg
-      className="size-4 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m22 2-7 20-4-9-9-4z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M22 2 11 13" />
-    </svg>
-  )
-}
-
-function FileIcon() {
-  return (
-    <svg
-      className="size-[18px] shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h8l4 4v16H6z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v5h5M9 13h6m-6 4h6" />
-    </svg>
-  )
-}
-
 function StatusBadge({ status }: { status: ReviewStatus }) {
   return (
     <span
@@ -528,7 +473,7 @@ function ActionDialog({
             isDanger ? 'bg-danger-soft text-danger' : 'bg-primary-soft text-primary-strong'
           }`}
         >
-          {isDanger ? <CloseIcon /> : <CheckIcon className="size-5" />}
+          {isDanger ? <XMarkIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" /> : <CheckIcon className="size-5" strokeWidth={1.8} aria-hidden="true" />}
         </span>
         <h2
           id="review-dialog-title"
@@ -546,11 +491,10 @@ function ActionDialog({
             <span className="text-[10px] font-semibold text-ink">
               Motivo <strong className="text-danger">*</strong>
             </span>
-            <textarea
+            <TextArea
               autoFocus
-              className={`min-h-[88px] w-full resize-y rounded-md border bg-white px-2.5 py-2 text-[11px] leading-4 text-ink outline-none placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10 ${
-                showReasonError ? 'border-danger bg-danger-subtle' : 'border-line'
-              }`}
+              className="!text-[11px]"
+              error={showReasonError ? 'El motivo es obligatorio.' : undefined}
               value={reason}
               onChange={(event) => onReasonChange(event.target.value)}
               placeholder="Explica por qué se toma esta decisión. Se enviará a la entidad."
@@ -627,9 +571,9 @@ function ReviewActionsPanel({
           <label className="text-[10px] font-semibold text-ink" htmlFor="review-observation">
             Observaciones <em className="font-normal not-italic text-muted">Opcional</em>
           </label>
-          <textarea
+          <TextArea
             id="review-observation"
-            className="min-h-[84px] w-full resize-y rounded-md border border-line bg-white px-2.5 py-2 text-[11px] leading-4 text-ink outline-none placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10"
+            className="!min-h-[84px] !text-[11px]"
             value={observation}
             onChange={(event) => onObservationChange(event.target.value)}
             placeholder={
@@ -661,7 +605,7 @@ function ReviewActionsPanel({
                   }`}
                   key={item.label}
                 >
-                  {item.met ? <CheckIcon className="mt-px size-3.5" /> : <CloseIcon />}
+                  {item.met ? <CheckIcon className="mt-px size-3.5" strokeWidth={1.8} aria-hidden="true" /> : <XMarkIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />}
                   <span>{item.label}</span>
                 </li>
               ))}
@@ -687,7 +631,7 @@ function ReviewActionsPanel({
                 disabled={isBlocked}
                 onClick={() => onAction(action)}
               >
-                {isDanger ? <CloseIcon /> : action === 'forward' ? <SendIcon /> : <CheckIcon />}
+                {isDanger ? <XMarkIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" /> : action === 'forward' ? <PaperAirplaneIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" /> : <CheckIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />}
                 {config.label}
               </button>
             )
@@ -946,7 +890,7 @@ export default function Review() {
                       key={document.name}
                     >
                       <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary-strong">
-                        <FileIcon />
+                        <DocumentTextIcon className="size-[18px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
                       </span>
                       <span className="flex min-w-0 flex-col">
                         <strong className="truncate text-[11px] text-ink">{document.name}</strong>
@@ -1025,7 +969,7 @@ export default function Review() {
           role="status"
         >
           <span className="grid size-[34px] shrink-0 place-items-center rounded-full bg-success-soft text-success">
-            <CheckIcon className="size-[19px]" />
+            <CheckIcon className="size-[19px]" strokeWidth={1.8} aria-hidden="true" />
           </span>
           <strong className="text-[11px] font-semibold text-success">{toast}</strong>
         </div>

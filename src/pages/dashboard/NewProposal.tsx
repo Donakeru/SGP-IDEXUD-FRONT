@@ -1,35 +1,26 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  ExclamationTriangleIcon,
+  PlusIcon,
+} from '@heroicons/react/24/outline'
 import { useNavigate } from 'react-router-dom'
-import FileInput from '../../components/FileInput'
+import Alert from '../../components/Alert'
+import { createProposal } from '../../services/proposalService'
+import { getList } from '../../services/ListService'
+import Field from '../../components/forms/Field'
+import FileInput from '../../components/forms/FileInput'
+import Input from '../../components/forms/Input'
+import Modal from '../../components/Modal'
+import SectionCard from '../../components/forms/SectionCard'
+import Select from '../../components/forms/Select'
+import TextArea from '../../components/forms/TextArea'
+import type { ApplicantType } from '../../types/proposal/ApplicantType'
+import type { FormErrors } from '../../types/proposal/FormErrors'
+import type { FormValues } from '../../types/proposal/FormValues'
+import type { CreateProposalDto } from '../../types/proposal/CreateProposalDto'
 
-type ApplicantType = '' | 'Entidad externa' | 'Facultad' | 'Instituto' | 'Rectoría'
-
-type FormValues = {
-  applicantType: ApplicantType
-  organizationName: string
-  nit: string
-  contactName: string
-  role: string
-  email: string
-  phone: string
-  title: string
-  proposalType: string
-  description: string
-  justification: string
-  startDate: string
-}
-
-type FormErrors = Partial<Record<keyof FormValues | 'facultyApproval' | 'privacy', string>>
-
-type FieldProps = {
-  label: string
-  required?: boolean
-  optional?: string
-  error?: string
-  help?: string
-  children: ReactNode
-  wide?: boolean
-}
 
 const initialValues: FormValues = {
   applicantType: '',
@@ -44,136 +35,6 @@ const initialValues: FormValues = {
   description: '',
   justification: '',
   startDate: '',
-}
-
-function Field({
-  label,
-  required,
-  optional,
-  error,
-  help,
-  children,
-  wide = false,
-}: FieldProps) {
-  return (
-    <label className={`flex flex-col gap-1.5 ${wide ? 'md:col-span-2' : ''}`}>
-      <span className="flex items-center gap-2 text-[10px] font-semibold text-ink">
-        {label}
-        {required && <strong className="text-danger">*</strong>}
-        {optional && (
-          <em className="font-normal not-italic text-muted">{optional}</em>
-        )}
-      </span>
-      {children}
-      {(error || help) && (
-        <small className={`text-[8px] leading-3 ${error ? 'text-danger' : 'text-muted'}`}>
-          {error ?? help}
-        </small>
-      )}
-    </label>
-  )
-}
-
-function SectionCard({
-  number,
-  title,
-  description,
-  children,
-}: {
-  number: number
-  title: string
-  description: string
-  children: ReactNode
-}) {
-  return (
-    <section className="overflow-hidden rounded-lg border border-line bg-white shadow-[0_4px_14px_rgba(38,38,38,0.05)]">
-      <header className="flex min-h-[68px] items-center gap-3 border-b border-line-soft px-4 py-3.5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary-strong">
-          {number}
-        </span>
-        <div>
-          <h2 className="text-[13px] font-semibold leading-[19px] text-ink">
-            {title}
-          </h2>
-          <p className="mt-px text-[9px] leading-[14px] text-muted">
-            {description}
-          </p>
-        </div>
-      </header>
-      <div className="grid gap-4 p-4 md:grid-cols-2">{children}</div>
-    </section>
-  )
-}
-
-function inputClass(error?: string) {
-  return `min-h-[38px] w-full rounded-md border bg-white px-2.5 text-[10px] text-ink outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10 ${
-    error ? 'border-danger bg-danger-subtle' : 'border-line'
-  }`
-}
-
-function textareaClass(error?: string) {
-  return `${inputClass(error)} min-h-[88px] resize-y py-2 leading-4`
-}
-
-function ChevronIcon() {
-  return (
-    <svg
-      className="size-4 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
-    </svg>
-  )
-}
-
-function WarningIcon() {
-  return (
-    <svg
-      className="size-[18px] shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3 2 21h20z" />
-      <path strokeLinecap="round" d="M12 9v5m0 3h.01" />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      className="size-[19px] shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
-    </svg>
-  )
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      className="size-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" d="M12 5v14M5 12h14" />
-    </svg>
-  )
 }
 
 function validateForm(
@@ -231,8 +92,37 @@ export default function NewProposal() {
   const [submitAttempted, setSubmitAttempted] = useState(false)
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [notification, setNotification] = useState<'draft' | 'success' | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadProposalLists = async () => {
+      try {
+        const [applicantTypes, proposalTypes] = await Promise.all([
+          getList('tipo_postulante', controller.signal),
+          getList('tipo_propuesta', controller.signal),
+        ])
+
+        console.log('Listas de propuesta recibidas:', {
+          tipo_postulante: applicantTypes,
+          tipo_propuesta: proposalTypes,
+        })
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error('No fue posible cargar las listas de propuesta:', error)
+        }
+      }
+    }
+
+    void loadProposalLists()
+
+    return () => controller.abort()
+  }, [])
 
   const isFaculty = values.applicantType === 'Facultad'
+  
   const errors = useMemo(
     () => validateForm(values, facultyFiles.length > 0, privacyAccepted),
     [facultyFiles.length, privacyAccepted, values],
@@ -246,6 +136,7 @@ export default function NewProposal() {
     setValues((current) => ({ ...current, [field]: value }))
     setTouched((current) => ({ ...current, [field]: true }))
     setNotification(null)
+    setSubmissionError(null)
   }
 
   const shouldShowError = (field: keyof FormErrors) =>
@@ -259,19 +150,55 @@ export default function NewProposal() {
       return
     }
 
+    setSubmissionError(null)
     setConfirmationOpen(true)
   }
 
-  const confirmSubmission = () => {
-    setConfirmationOpen(false)
-    setNotification('success')
+  const confirmSubmission = async () => {
+    if (isSubmitting) {
+      return
+    }
+
+    const applicantType = values.applicantType
+
+    if (!applicantType) {
+      setSubmitAttempted(true)
+      setConfirmationOpen(false)
+      return
+    }
+
+    const proposalDto: CreateProposalDto = {
+      ...values,
+      applicantType,
+      privacyAccepted,
+      proposalFiles,
+      facultyFiles,
+    }
+
+    setIsSubmitting(true)
+    setSubmissionError(null)
+
+    try {
+      console.log(proposalDto)
+      await createProposal(proposalDto)
+      setConfirmationOpen(false)
+      setNotification('success')
+    } catch (error) {
+      setSubmissionError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible enviar la propuesta.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="mx-auto w-full max-w-[1216px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10">
       <div className="mb-5 flex items-center gap-1.5 text-[10px] text-muted">
         <span>Mis propuestas</span>
-        <ChevronIcon />
+        <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
         <strong className="font-semibold text-primary-strong">Nueva propuesta</strong>
       </div>
 
@@ -292,7 +219,7 @@ export default function NewProposal() {
           className="mb-4 flex items-start gap-3 rounded-lg border border-danger-line bg-danger-subtle p-3.5 text-danger"
           role="alert"
         >
-          <WarningIcon />
+          <ExclamationTriangleIcon className="size-[18px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
           <div>
             <strong className="text-[10px] font-semibold">
               Revisa la información del formulario
@@ -316,8 +243,8 @@ export default function NewProposal() {
               required
               error={shouldShowError('applicantType') ? errors.applicantType : undefined}
             >
-              <select
-                className={inputClass(shouldShowError('applicantType') ? errors.applicantType : undefined)}
+              <Select
+                error={shouldShowError('applicantType') ? errors.applicantType : undefined}
                 value={values.applicantType}
                 onChange={(event) => updateField('applicantType', event.target.value as ApplicantType)}
               >
@@ -326,15 +253,15 @@ export default function NewProposal() {
                 <option value="Facultad">Facultad</option>
                 <option value="Instituto">Instituto</option>
                 <option value="Rectoría">Rectoría</option>
-              </select>
+              </Select>
             </Field>
             <Field
               label="Nombre de la entidad o dependencia"
               required
               error={shouldShowError('organizationName') ? errors.organizationName : undefined}
             >
-              <input
-                className={inputClass(shouldShowError('organizationName') ? errors.organizationName : undefined)}
+              <Input
+                error={shouldShowError('organizationName') ? errors.organizationName : undefined}
                 value={values.organizationName}
                 onChange={(event) => updateField('organizationName', event.target.value)}
                 placeholder="Ej. Facultad de Ingeniería"
@@ -347,8 +274,8 @@ export default function NewProposal() {
               error={shouldShowError('nit') ? errors.nit : undefined}
               help={values.applicantType !== 'Entidad externa' ? 'Obligatorio para entidades externas.' : undefined}
             >
-              <input
-                className={inputClass(shouldShowError('nit') ? errors.nit : undefined)}
+              <Input
+                error={shouldShowError('nit') ? errors.nit : undefined}
                 value={values.nit}
                 onChange={(event) => updateField('nit', event.target.value)}
                 placeholder="Ej. 899.999.230-7"
@@ -366,16 +293,15 @@ export default function NewProposal() {
               required
               error={shouldShowError('contactName') ? errors.contactName : undefined}
             >
-              <input
-                className={inputClass(shouldShowError('contactName') ? errors.contactName : undefined)}
+              <Input
+                error={shouldShowError('contactName') ? errors.contactName : undefined}
                 value={values.contactName}
                 onChange={(event) => updateField('contactName', event.target.value)}
                 placeholder="Nombre y apellidos"
               />
             </Field>
             <Field label="Cargo" optional="Opcional">
-              <input
-                className={inputClass()}
+              <Input
                 value={values.role}
                 onChange={(event) => updateField('role', event.target.value)}
                 placeholder="Ej. Directora de proyectos"
@@ -387,8 +313,8 @@ export default function NewProposal() {
               error={shouldShowError('email') ? errors.email : undefined}
               help={!shouldShowError('email') ? 'Aquí recibirás las notificaciones del proceso.' : undefined}
             >
-              <input
-                className={inputClass(shouldShowError('email') ? errors.email : undefined)}
+              <Input
+                error={shouldShowError('email') ? errors.email : undefined}
                 type="email"
                 value={values.email}
                 onChange={(event) => updateField('email', event.target.value)}
@@ -396,8 +322,7 @@ export default function NewProposal() {
               />
             </Field>
             <Field label="Teléfono" optional="Opcional">
-              <input
-                className={inputClass()}
+              <Input
                 type="tel"
                 value={values.phone}
                 onChange={(event) => updateField('phone', event.target.value)}
@@ -417,8 +342,8 @@ export default function NewProposal() {
               error={shouldShowError('title') ? errors.title : undefined}
               wide
             >
-              <input
-                className={inputClass(shouldShowError('title') ? errors.title : undefined)}
+              <Input
+                error={shouldShowError('title') ? errors.title : undefined}
                 value={values.title}
                 onChange={(event) => updateField('title', event.target.value)}
                 placeholder="Escribe un título breve y descriptivo"
@@ -429,8 +354,8 @@ export default function NewProposal() {
               required
               error={shouldShowError('proposalType') ? errors.proposalType : undefined}
             >
-              <select
-                className={inputClass(shouldShowError('proposalType') ? errors.proposalType : undefined)}
+              <Select
+                error={shouldShowError('proposalType') ? errors.proposalType : undefined}
                 value={values.proposalType}
                 onChange={(event) => updateField('proposalType', event.target.value)}
               >
@@ -439,11 +364,10 @@ export default function NewProposal() {
                 <option value="Servicios académicos">Servicios académicos</option>
                 <option value="Consultoría">Consultoría</option>
                 <option value="Proyecto especial">Proyecto especial</option>
-              </select>
+              </Select>
             </Field>
             <Field label="Fecha estimada de inicio" optional="Opcional">
-              <input
-                className={inputClass()}
+              <Input
                 type="date"
                 value={values.startDate}
                 onChange={(event) => updateField('startDate', event.target.value)}
@@ -456,8 +380,8 @@ export default function NewProposal() {
               help={!shouldShowError('description') ? 'Sé claro y específico sobre el alcance.' : undefined}
               wide
             >
-              <textarea
-                className={textareaClass(shouldShowError('description') ? errors.description : undefined)}
+              <TextArea
+                error={shouldShowError('description') ? errors.description : undefined}
                 maxLength={1000}
                 value={values.description}
                 onChange={(event) => updateField('description', event.target.value)}
@@ -469,8 +393,7 @@ export default function NewProposal() {
               </span>
             </Field>
             <Field label="Justificación o necesidad" optional="Recomendado" wide>
-              <textarea
-                className={textareaClass()}
+              <TextArea
                 value={values.justification}
                 onChange={(event) => updateField('justification', event.target.value)}
                 placeholder="Explica la situación que motiva esta propuesta y su importancia."
@@ -539,6 +462,7 @@ export default function NewProposal() {
               onChange={(event) => {
                 setPrivacyAccepted(event.target.checked)
                 setNotification(null)
+                setSubmissionError(null)
               }}
             />
             <span>
@@ -573,7 +497,7 @@ export default function NewProposal() {
                 className="inline-flex h-[38px] items-center justify-center gap-2 rounded-md bg-primary px-3.5 text-[10px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] hover:bg-primary-hover"
                 type="submit"
               >
-                <PlusIcon />
+                <PlusIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />
                 Enviar propuesta
               </button>
             </div>
@@ -583,7 +507,7 @@ export default function NewProposal() {
         <aside className="sticky top-4 hidden overflow-hidden rounded-lg border border-line bg-white shadow-[0_4px_14px_rgba(38,38,38,0.05)] lg:block">
           <div className="flex items-center gap-2.5 border-b border-line-soft p-3.5">
             <span className="grid size-[34px] place-items-center rounded-lg bg-primary-soft text-primary-strong">
-              <CheckIcon />
+              <CheckIcon className="size-[19px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div>
               <strong className="text-[10px] font-semibold text-ink">
@@ -621,62 +545,56 @@ export default function NewProposal() {
         </aside>
       </div>
 
-      {confirmationOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/50 p-5"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirmation-title"
-        >
-          <div className="w-full max-w-[420px] rounded-lg bg-white p-6 text-center shadow-[0_18px_48px_rgba(38,38,38,0.22)]">
-            <span className="mx-auto mb-3.5 grid size-[46px] place-items-center rounded-full bg-primary-soft text-primary-strong">
-              <CheckIcon />
-            </span>
-            <h2 id="confirmation-title" className="text-[17px] font-semibold leading-6 text-ink">
-              ¿Enviar propuesta?
-            </h2>
-            <p className="mx-auto mt-2 max-w-[340px] text-[10px] leading-4 text-muted">
-              Una vez enviada, la Asistente de Dirección la revisará. Podrás consultar el avance desde “Mis propuestas”.
-            </p>
-            <div className="mt-5 flex justify-center gap-2">
-              <button
-                className="h-[38px] rounded-md border border-line bg-white px-3.5 text-[10px] font-semibold text-body hover:bg-primary-soft"
-                type="button"
-                onClick={() => setConfirmationOpen(false)}
-              >
-                Volver al formulario
-              </button>
-              <button
-                className="h-[38px] rounded-md bg-primary px-3.5 text-[10px] font-semibold text-white hover:bg-primary-hover"
-                type="button"
-                onClick={confirmSubmission}
-              >
-                Sí, enviar propuesta
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={confirmationOpen}
+        title="¿Enviar propuesta?"
+        description="Una vez enviada, la Asistente de Dirección la revisará. Podrás consultar el avance desde “Mis propuestas”."
+        icon={<CheckIcon className="size-[19px]" strokeWidth={1.8} aria-hidden="true" />}
+        onClose={() => {
+          if (!isSubmitting) {
+            setConfirmationOpen(false)
+          }
+        }}
+        footer={
+          <>
+            <button
+              className="h-[38px] rounded-md border border-line bg-white px-3.5 text-[10px] font-semibold text-body hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => setConfirmationOpen(false)}
+            >
+              Volver al formulario
+            </button>
+            <button
+              className="h-[38px] rounded-md bg-primary px-3.5 text-[10px] font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              disabled={isSubmitting}
+              onClick={confirmSubmission}
+            >
+              {isSubmitting ? 'Enviando…' : 'Sí, enviar propuesta'}
+            </button>
+          </>
+        }
+      >
+        {submissionError && (
+          <p className="mx-auto mt-3 max-w-[340px] rounded-md border border-danger-line bg-danger-subtle px-3 py-2 text-left text-[9px] leading-4 text-danger" role="alert">
+            {submissionError}
+          </p>
+        )}
+      </Modal>
 
-      {notification && (
-        <div
-          className="fixed bottom-5 right-5 z-40 flex w-[min(390px,calc(100vw-40px))] items-center gap-2.5 rounded-lg border border-success-line bg-white p-3 shadow-[0_12px_32px_rgba(38,38,38,0.16)]"
-          role="status"
-        >
-          <span className="grid size-[34px] shrink-0 place-items-center rounded-full bg-success-soft text-success">
-            <CheckIcon />
-          </span>
-          <div className="min-w-0 flex-1">
-            <strong className="text-[10px] font-semibold text-success">
-              {notification === 'success' ? 'Propuesta enviada correctamente' : 'Borrador guardado'}
-            </strong>
-            <p className="mt-0.5 text-[8px] text-muted">
-              {notification === 'success'
-                ? 'Se asignó el radicado PROP-2026-015.'
-                : 'Podrás continuar editando la propuesta más adelante.'}
-            </p>
-          </div>
-          {notification === 'success' && (
+      <Alert
+        open={notification !== null}
+        variant="success"
+        title={notification === 'success' ? 'Propuesta enviada correctamente' : 'Borrador guardado'}
+        description={
+          notification === 'success'
+            ? 'La propuesta fue registrada correctamente.'
+            : 'Podrás continuar editando la propuesta más adelante.'
+        }
+        icon={<CheckIcon className="size-[19px]" strokeWidth={1.8} aria-hidden="true" />}
+        action={
+          notification === 'success' ? (
             <button
               className="rounded-md border-0 bg-primary-soft px-2 py-1.5 text-[8px] font-semibold text-primary-strong"
               type="button"
@@ -684,9 +602,9 @@ export default function NewProposal() {
             >
               Ver estado
             </button>
-          )}
-        </div>
-      )}
+          ) : undefined
+        }
+      />
     </div>
   )
 }

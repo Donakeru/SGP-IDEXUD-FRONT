@@ -1,4 +1,12 @@
-import type { ReactNode } from 'react'
+import {
+  BuildingOffice2Icon,
+  ChartBarIcon,
+  ClipboardDocumentCheckIcon,
+  Cog6ToothIcon,
+  FolderIcon,
+  Squares2X2Icon,
+  UserGroupIcon,
+} from '@heroicons/react/24/outline'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 type SidebarIconName =
@@ -43,65 +51,25 @@ const administrationItems: SidebarItem[] = [
   { label: 'Configuración', icon: 'settings' },
 ]
 
-const iconPaths: Record<SidebarIconName, ReactNode> = {
-  dashboard: (
-    <>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </>
-  ),
-  folder: (
-    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z" />
-  ),
-  review: (
-    <>
-      <path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2" />
-      <rect x="9" y="2.5" width="6" height="3.5" rx="1" />
-      <path d="m9 14 2 2 4-4" />
-    </>
-  ),
-  users: (
-    <>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3 19a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 5" />
-    </>
-  ),
-  report: (
-    <>
-      <path d="M5 20V10M12 20V4M19 20v-7" />
-      <path d="M3 20h18" />
-    </>
-  ),
-  building: (
-    <>
-      <path d="M3 21h18M6 21V9h12v12M9 13h2m2 0h2m-6 4h2m2 0h2" />
-      <path d="m5 9 7-5 7 5" />
-    </>
-  ),
-  settings: (
-    <>
-      <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-      <path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a2 2 0 0 0-3.4 1.4v.3a2 2 0 1 1-4 0v-.2A2 2 0 0 0 5.8 18l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A2 2 0 0 0 1.6 12a2 2 0 1 1 4 0v.2A2 2 0 0 0 9 10.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A2 2 0 0 0 15.2 6a2 2 0 1 1 4 0v.2A2 2 0 0 0 21 8l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A2 2 0 0 0 22.4 14a2 2 0 1 1-4 0v-.2A2 2 0 0 0 19.4 15Z" />
-    </>
-  ),
+const iconComponents = {
+  dashboard: Squares2X2Icon,
+  folder: FolderIcon,
+  review: ClipboardDocumentCheckIcon,
+  users: UserGroupIcon,
+  report: ChartBarIcon,
+  building: BuildingOffice2Icon,
+  settings: Cog6ToothIcon,
 }
 
 function SidebarIcon({ name }: { name: SidebarIconName }) {
+  const Icon = iconComponents[name]
+
   return (
-    <svg
+    <Icon
       className="size-[18px] shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.8"
+      strokeWidth={1.8}
       aria-hidden="true"
-    >
-      {iconPaths[name]}
-    </svg>
+    />
   )
 }
 

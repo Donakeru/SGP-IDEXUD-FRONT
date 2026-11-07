@@ -1,3 +1,4 @@
+import { CheckIcon, ClockIcon, FolderIcon, ChatBubbleLeftIcon, PlusIcon } from '@heroicons/react/24/outline'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import InformativeCard, {
@@ -8,63 +9,10 @@ import ProposalsTable from '../../components/ProposalsTable'
 type MetricIconName = 'folder' | 'clock' | 'check' | 'message'
 
 const metricIcons: Record<MetricIconName, ReactNode> = {
-  folder: (
-    <svg
-      className="size-[18px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"
-      />
-    </svg>
-  ),
-  clock: (
-    <svg
-      className="size-[18px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path strokeLinecap="round" d="M12 7v5l3 2" />
-    </svg>
-  ),
-  check: (
-    <svg
-      className="size-[18px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
-    </svg>
-  ),
-  message: (
-    <svg
-      className="size-[18px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6 18 3 21v-9a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8v1a8 8 0 0 1-8 8H6Z"
-      />
-    </svg>
-  ),
+  folder: <FolderIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />,
+  clock: <ClockIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />,
+  check: <CheckIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />,
+  message: <ChatBubbleLeftIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />,
 }
 
 const informativeCards: InformativeCardData[] = [
@@ -102,21 +50,6 @@ const informativeCards: InformativeCardData[] = [
   },
 ]
 
-function PlusIcon() {
-  return (
-    <svg
-      className="size-[17px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" d="M12 5v14M5 12h14" />
-    </svg>
-  )
-}
-
 export default function Home() {
   return (
     <div className="mx-auto w-full max-w-[1216px] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
@@ -137,7 +70,7 @@ export default function Home() {
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-[11px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] transition-colors hover:bg-primary-hover"
           to="/dashboard/proposals/new"
         >
-          <PlusIcon />
+          <PlusIcon className="size-[17px]" strokeWidth={1.8} aria-hidden="true" />
           Nueva propuesta
         </Link>
       </div>

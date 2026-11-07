@@ -1,3 +1,8 @@
+import {
+  Bars3Icon,
+  ChevronDownIcon,
+} from '@heroicons/react/24/outline'
+
 type HeaderProps = {
   isSidebarOpen: boolean
   onMenuClick: () => void
@@ -24,36 +29,6 @@ function Brand() {
   )
 }
 
-function MenuIcon() {
-  return (
-    <svg
-      className="size-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
-    </svg>
-  )
-}
-
-function ChevronIcon() {
-  return (
-    <svg
-      className="size-4 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-    </svg>
-  )
-}
-
 export default function Header({
   isSidebarOpen,
   onMenuClick,
@@ -69,7 +44,7 @@ export default function Header({
           aria-expanded={isSidebarOpen}
           onClick={onMenuClick}
         >
-          <MenuIcon />
+          <Bars3Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
         </button>
 
         <Brand />
@@ -99,7 +74,7 @@ export default function Header({
               Coordinación IDEXUD
             </span>
           </span>
-          <ChevronIcon />
+          <ChevronDownIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
         </button>
       </div>
     </header>

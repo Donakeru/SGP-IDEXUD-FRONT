@@ -1,3 +1,8 @@
+import {
+  ArrowUpTrayIcon,
+  DocumentTextIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline'
 import { useRef, useState } from 'react'
 
 type FileItemStatus = 'ready' | 'error'
@@ -22,54 +27,6 @@ export type FileInputProps = {
 
 const DEFAULT_ACCEPT = '.pdf,.docx,.xlsx'
 const DEFAULT_FORMATS_LABEL = 'PDF, DOCX o XLSX'
-
-function UploadIcon() {
-  return (
-    <svg
-      className="size-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" d="M12 17V3M7 8l5-5 5 5" />
-      <path strokeLinecap="round" d="M5 21h14" />
-    </svg>
-  )
-}
-
-function FileIcon() {
-  return (
-    <svg
-      className="size-[19px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h8l4 4v16H6z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v5h5M9 13h6m-6 4h6" />
-    </svg>
-  )
-}
-
-function WarningIcon() {
-  return (
-    <svg
-      className="size-[17px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3 2 21h20z" />
-      <path strokeLinecap="round" d="M12 9v5m0 3h.01" />
-    </svg>
-  )
-}
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) {
@@ -222,7 +179,7 @@ export default function FileInput({
         }}
       >
         <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-white text-primary-strong">
-          <UploadIcon />
+          <ArrowUpTrayIcon className="size-5" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span className="flex flex-col gap-1">
           <strong className="text-[10px] font-semibold text-primary-strong">
@@ -263,7 +220,7 @@ export default function FileInput({
                       : 'bg-primary-soft text-primary-strong'
                   }`}
                 >
-                  {hasError ? <WarningIcon /> : <FileIcon />}
+                  {hasError ? <ExclamationTriangleIcon className="size-[17px]" strokeWidth={1.8} aria-hidden="true" /> : <DocumentTextIcon className="size-[19px]" strokeWidth={1.8} aria-hidden="true" />}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-ink">

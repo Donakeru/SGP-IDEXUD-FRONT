@@ -1,3 +1,9 @@
+import {
+  AdjustmentsHorizontalIcon,
+  ChevronRightIcon,
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
 import { useMemo, useState } from 'react'
 
 type ProposalStatus = 'En comité' | 'En revisión' | 'Aprobada' | 'Borrador'
@@ -83,68 +89,6 @@ const statusStyles: Record<ProposalStatus, string> = {
   Borrador: 'bg-chip text-body',
 }
 
-function FileIcon() {
-  return (
-    <svg
-      className="size-[18px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h8l4 4v16H6z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14 2v5h5M9 13h6m-6 4h6" />
-    </svg>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      className="size-[17px] shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path strokeLinecap="round" d="m20 20-4-4" />
-    </svg>
-  )
-}
-
-function FilterIcon() {
-  return (
-    <svg
-      className="size-4 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" d="M4 6h16M7 12h10m-7 6h4" />
-    </svg>
-  )
-}
-
-function ChevronIcon() {
-  return (
-    <svg
-      className="size-4 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
-    </svg>
-  )
-}
-
 function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
   return (
     <span
@@ -193,7 +137,7 @@ export default function ProposalsTable({
         <div className="flex items-center gap-2">
           <label className="flex h-[34px] w-[210px] items-center gap-[7px] rounded-md border border-line bg-white px-[9px] text-muted focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
             <span className="sr-only">Buscar propuesta</span>
-            <SearchIcon />
+            <MagnifyingGlassIcon className="size-[17px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
             <input
               className="min-w-0 flex-1 border-0 bg-transparent text-[10px] text-ink outline-none placeholder:text-muted"
               type="search"
@@ -206,7 +150,7 @@ export default function ProposalsTable({
             className="inline-flex h-[34px] items-center gap-1.5 rounded-md border border-line bg-white px-2.5 text-[10px] font-semibold text-body transition-colors hover:bg-primary-soft hover:text-primary-strong"
             type="button"
           >
-            <FilterIcon />
+            <AdjustmentsHorizontalIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
             Filtrar
           </button>
         </div>
@@ -230,7 +174,7 @@ export default function ProposalsTable({
             >
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid size-[30px] shrink-0 place-items-center rounded-md bg-primary-soft text-primary-strong">
-                  <FileIcon />
+                  <DocumentTextIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
                   <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-[15px] text-ink">
@@ -266,7 +210,7 @@ export default function ProposalsTable({
               <span className="text-[9px] text-muted">{proposal.date}</span>
 
               <span className="text-muted">
-                <ChevronIcon />
+                <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
               </span>
             </div>
           ))}
@@ -288,7 +232,7 @@ export default function ProposalsTable({
           type="button"
         >
           Ver todas las propuestas
-          <ChevronIcon />
+          <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
         </button>
       </footer>
     </section>
