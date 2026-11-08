@@ -10,6 +10,7 @@ type AlertProps = {
   action?: ReactNode
   variant?: AlertVariant
   role?: 'alert' | 'status'
+  placement?: 'fixed' | 'inline'
   className?: string
 }
 
@@ -47,6 +48,7 @@ export default function Alert({
   action,
   variant = 'info',
   role = 'status',
+  placement = 'fixed',
   className = '',
 }: AlertProps) {
   if (!open) {
@@ -57,7 +59,7 @@ export default function Alert({
 
   return (
     <div
-      className={`fixed bottom-5 right-5 z-40 flex w-[min(390px,calc(100vw-40px))] items-center gap-2.5 rounded-lg border bg-white p-3 shadow-[0_12px_32px_rgba(38,38,38,0.16)] ${styles.container} ${className}`}
+      className={`${placement === 'fixed' ? 'fixed bottom-5 right-5 z-40 w-[min(390px,calc(100vw-40px))]' : 'w-full'} flex items-center gap-2.5 rounded-lg border bg-white p-3 shadow-[0_12px_32px_rgba(38,38,38,0.16)] ${styles.container} ${className}`}
       role={role}
       aria-live={role === 'alert' ? 'assertive' : 'polite'}
     >

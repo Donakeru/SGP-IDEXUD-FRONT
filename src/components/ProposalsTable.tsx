@@ -4,100 +4,53 @@ import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Select from './forms/Select'
+import { getProposals } from '../services/proposalService'
+import type { ProposalListItem } from '../types/proposal/ProposalListItem'
 
-type ProposalStatus = 'En comité' | 'En revisión' | 'Aprobada' | 'Borrador'
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20] as const
+const DEFAULT_PAGE_SIZE = 5
 
-type Proposal = {
-  id: string
-  title: string
-  entity: string
-  date: string
-  status: ProposalStatus
-  progress: number
-  owner: string
-  initials: string
-}
-
-const proposals: Proposal[] = [
-  {
-    id: 'PROP-2026-014',
-    title: 'Convenio de capacitación para el trabajo',
-    entity: 'Fundación para el Desarrollo Social',
-    date: '02 oct 2026',
-    status: 'En comité',
-    progress: 76,
-    owner: 'Equipo técnico',
-    initials: 'ET',
-  },
-  {
-    id: 'PROP-2026-013',
-    title: 'Diplomado en gestión pública territorial',
-    entity: 'Alcaldía Local de Suba',
-    date: '29 sep 2026',
-    status: 'En revisión',
-    progress: 52,
-    owner: 'Laura Gómez',
-    initials: 'LG',
-  },
-  {
-    id: 'PROP-2026-012',
-    title: 'Laboratorio de innovación educativa',
-    entity: 'Secretaría de Educación',
-    date: '24 sep 2026',
-    status: 'Aprobada',
-    progress: 100,
-    owner: 'Ana Torres',
-    initials: 'AT',
-  },
-  {
-    id: 'PROP-2026-011',
-    title: 'Fortalecimiento de capacidades digitales',
-    entity: 'Caja de Compensación Familiar',
-    date: '18 sep 2026',
-    status: 'Borrador',
-    progress: 28,
-    owner: 'Carlos Ruiz',
-    initials: 'CR',
-  },
-  {
-    id: 'PROP-2026-010',
-    title: 'Escuela de liderazgo comunitario',
-    entity: 'Instituto Distrital de Participación',
-    date: '12 sep 2026',
-    status: 'En revisión',
-    progress: 64,
-    owner: 'Equipo social',
-    initials: 'ES',
-  },
-  {
-    id: 'PROP-2026-009',
-    title: 'Formación en analítica de datos',
-    entity: 'Empresa de Acueducto de Bogotá',
-    date: '05 sep 2026',
-    status: 'Aprobada',
-    progress: 100,
-    owner: 'Equipo técnico',
-    initials: 'ET',
-  },
-]
-
-const statusStyles: Record<ProposalStatus, string> = {
+const statusStyles: Record<string, string> = {
+  Registrado: 'bg-primary-soft text-primary-strong',
   'En comité': 'bg-primary-soft text-primary-strong',
   'En revisión': 'bg-warning-soft text-warning',
   Aprobada: 'bg-success-soft text-success',
   Borrador: 'bg-chip text-body',
+  Rechazada: 'bg-danger-soft text-danger',
 }
 
-function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
+function ProposalStatusBadge({ status }: { status: string }) {
   return (
     <span
-      className={`inline-flex w-max items-center gap-[5px] rounded-full px-2 py-1 text-[8px] font-semibold ${statusStyles[status]}`}
+      className={`inline-flex w-max items-center gap-[5px] rounded-full px-2 py-1 text-[8px] font-semibold ${statusStyles[status] ?? 'bg-chip text-body'}`}
     >
       <span className="size-[5px] rounded-full bg-current" />
       {status}
     </span>
   )
+}
+
+function formatProposalDate(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+function matchesQuery(proposal: ProposalListItem, query: string) {
+  return `${proposal.id_propuesta} ${proposal.nombre} ${proposal.estado} ${proposal.nombre_postulante}`
+    .toLowerCase()
+    .includes(query)
 }
 
 type ProposalsTableProps = {
@@ -107,7 +60,58 @@ type ProposalsTableProps = {
 export default function ProposalsTable({
   title = 'Todas las propuestas',
 }: ProposalsTableProps) {
+  const navigate = useNavigate()
+  const [proposals, setProposals] = useState<ProposalListItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [nextOffset, setNextOffset] = useState(0)
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE)
   const [query, setQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadInitialProposals = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const response = await getProposals(0, limit, controller.signal)
+
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setProposals(response.items)
+        setTotal(response.total)
+        setNextOffset(response.offset + response.items.length)
+      } catch (requestError) {
+        if (!controller.signal.aborted) {
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : 'No fue posible cargar las propuestas.',
+          )
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadInitialProposals()
+
+    setProposals([])
+    setTotal(0)
+    setNextOffset(0)
+    setQuery('')
+
+    return () => controller.abort()
+  }, [limit])
+
   const visibleProposals = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
@@ -115,12 +119,35 @@ export default function ProposalsTable({
       return proposals
     }
 
-    return proposals.filter((proposal) =>
-      `${proposal.id} ${proposal.title} ${proposal.entity}`
-        .toLowerCase()
-        .includes(normalizedQuery),
-    )
-  }, [query])
+    return proposals.filter((proposal) => matchesQuery(proposal, normalizedQuery))
+  }, [proposals, query])
+
+  const hasMore = nextOffset < total
+
+  const loadMore = async () => {
+    if (isLoading || isLoadingMore || !hasMore) {
+      return
+    }
+
+    setIsLoadingMore(true)
+    setError(null)
+
+    try {
+      const response = await getProposals(nextOffset, limit)
+
+      setProposals((current) => [...current, ...response.items])
+      setTotal(response.total)
+      setNextOffset(response.offset + response.items.length)
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'No fue posible cargar más propuestas.',
+      )
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   return (
     <section className="overflow-hidden rounded-lg border border-line bg-white shadow-[0_4px_14px_rgba(38,38,38,0.05)]">
@@ -130,7 +157,7 @@ export default function ProposalsTable({
             {title}
           </h2>
           <p className="mt-px text-[9px] leading-[14px] text-muted">
-            {visibleProposals.length} resultados disponibles
+            {visibleProposals.length} resultados visibles de {total}
           </p>
         </div>
 
@@ -157,20 +184,41 @@ export default function ProposalsTable({
       </header>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[860px]">
-          <div className="grid min-h-[34px] grid-cols-[minmax(330px,2.2fr)_126px_130px_142px_82px_20px] items-center gap-x-3 border-b border-line-soft bg-canvas px-4 text-[8px] font-bold uppercase tracking-[0.06em] text-muted">
+        <div className="min-w-[760px]">
+          <div className="grid min-h-[34px] grid-cols-[minmax(330px,2.2fr)_126px_minmax(180px,1fr)_142px_20px] items-center gap-x-3 border-b border-line-soft bg-canvas px-4 text-[8px] font-bold uppercase tracking-[0.06em] text-muted">
             <span>Propuesta</span>
             <span>Estado</span>
-            <span>Avance</span>
-            <span>Responsable</span>
-            <span>Radicación</span>
+            <span>Postulante</span>
+            <span>Fecha de registro</span>
             <span />
           </div>
 
-          {visibleProposals.map((proposal) => (
+          {isLoading && (
+            <div className="px-4 py-10 text-center text-xs text-muted">
+              Cargando propuestas…
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className="border-b border-danger-line bg-danger-subtle px-4 py-4 text-center text-[10px] text-danger" role="alert">
+              {error}
+            </div>
+          )}
+
+          {!isLoading && !error && visibleProposals.map((proposal) => (
             <div
-              className="grid min-h-[68px] grid-cols-[minmax(330px,2.2fr)_126px_130px_142px_82px_20px] items-center gap-x-3 border-b border-line-soft bg-white px-4 text-left transition-colors last:border-0 hover:bg-canvas"
-              key={proposal.id}
+              className="grid min-h-[68px] cursor-pointer grid-cols-[minmax(330px,2.2fr)_126px_minmax(180px,1fr)_142px_20px] items-center gap-x-3 border-b border-line-soft bg-white px-4 text-left transition-colors last:border-0 hover:bg-canvas focus:bg-canvas focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/30"
+              key={proposal.id_propuesta}
+              role="button"
+              tabIndex={0}
+              aria-label={`Abrir detalle de ${proposal.nombre}`}
+              onClick={() => navigate(`/dashboard/proposals/detail?id=${proposal.id_propuesta}`)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  navigate(`/dashboard/proposals/detail?id=${proposal.id_propuesta}`)
+                }
+              }}
             >
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid size-[30px] shrink-0 place-items-center rounded-md bg-primary-soft text-primary-strong">
@@ -178,36 +226,23 @@ export default function ProposalsTable({
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
                   <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-[15px] text-ink">
-                    {proposal.title}
+                    {proposal.nombre}
                   </strong>
                   <small className="overflow-hidden text-ellipsis whitespace-nowrap text-[8px] leading-[13px] text-muted">
-                    {proposal.id} · {proposal.entity}
+                    ID {proposal.id_propuesta}
                   </small>
                 </span>
               </div>
 
-              <ProposalStatusBadge status={proposal.status} />
+              <ProposalStatusBadge status={proposal.estado} />
 
-              <div className="flex items-center gap-[7px]">
-                <span className="h-[5px] w-[78px] overflow-hidden rounded-[3px] bg-line">
-                  <span
-                    className="block h-full rounded-[3px] bg-primary"
-                    style={{ width: `${proposal.progress}%` }}
-                  />
-                </span>
-                <small className="text-[8px] text-muted">
-                  {proposal.progress}%
-                </small>
-              </div>
+              <span className="truncate text-[9px] text-body">
+                {proposal.nombre_postulante}
+              </span>
 
-              <div className="flex items-center gap-[7px] text-[9px] text-body">
-                <span className="grid size-[26px] shrink-0 place-items-center rounded-full bg-primary text-[8px] font-bold text-white">
-                  {proposal.initials}
-                </span>
-                <span className="truncate">{proposal.owner}</span>
-              </div>
-
-              <span className="text-[9px] text-muted">{proposal.date}</span>
+              <span className="text-[9px] text-muted">
+                {formatProposalDate(proposal.created_at)}
+              </span>
 
               <span className="text-muted">
                 <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
@@ -215,7 +250,7 @@ export default function ProposalsTable({
             </div>
           ))}
 
-          {visibleProposals.length === 0 && (
+          {!isLoading && !error && visibleProposals.length === 0 && (
             <div className="px-4 py-10 text-center text-xs text-muted">
               No se encontraron propuestas.
             </div>
@@ -223,17 +258,38 @@ export default function ProposalsTable({
         </div>
       </div>
 
-      <footer className="flex min-h-[42px] items-center justify-between border-t border-line-soft bg-canvas px-4">
-        <span className="text-[8px] text-muted">
-          Mostrando {visibleProposals.length} de 24 propuestas
-        </span>
-        <button
-          className="inline-flex items-center gap-[3px] border-0 bg-transparent text-[8px] font-semibold text-primary-strong"
-          type="button"
-        >
-          Ver todas las propuestas
-          <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-        </button>
+      <footer className="flex min-h-[42px] flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-canvas px-4 py-2">
+        <div className="flex items-center gap-3">
+          <span className="text-[8px] text-muted">
+            Mostrando {visibleProposals.length} de {total} propuestas
+          </span>
+          <label className="flex items-center gap-1.5 text-[8px] text-muted">
+            <span>Por página</span>
+            <Select
+              aria-label="Cantidad de propuestas por página"
+              className="h-7 !min-h-[28px] w-[54px] px-2 text-[9px]"
+              value={limit}
+              onChange={(event) => setLimit(Number(event.target.value))}
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </Select>
+          </label>
+        </div>
+        {hasMore && (
+          <button
+            className="inline-flex items-center gap-[3px] border-0 bg-transparent text-[8px] font-semibold text-primary-strong disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            disabled={isLoading || isLoadingMore}
+            onClick={loadMore}
+          >
+            {isLoadingMore ? 'Cargando…' : 'Cargar más'}
+            <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+          </button>
+        )}
       </footer>
     </section>
   )

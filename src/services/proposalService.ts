@@ -1,5 +1,6 @@
 import { httpClient } from './http/httpClient'
 import type { CreateProposalDto } from '../types/proposal/CreateProposalDto'
+import type { ProposalListResponse } from '../types/proposal/ProposalListResponse'
 
 
 export function buildCreateProposalFormData(dto: CreateProposalDto) {
@@ -45,4 +46,25 @@ export async function createProposal(
   }
 
   return response
+}
+
+export async function getProposals(
+  offset = 0,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<ProposalListResponse> {
+  const searchParams = new URLSearchParams({
+    offset: String(offset),
+    limit: String(limit),
+  })
+  const response = await httpClient.get(
+    `/proposal/?${searchParams.toString()}`,
+    signal,
+  )
+
+  if (!response.ok) {
+    throw new Error(`No fue posible consultar las propuestas (${response.status}).`)
+  }
+
+  return response.json() as Promise<ProposalListResponse>
 }
