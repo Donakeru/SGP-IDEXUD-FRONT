@@ -1,7 +1,4 @@
-import type { UserRole } from './UserRole'
+import type { User } from './User'
 
-export type UserResponse = {
-  nombre: string
-  correo: string
-  roles: UserRole[]
-}
+/** Respuesta de `GET /users/{id_usuario}`. Alias de `User`. */
+export type UserResponse = User

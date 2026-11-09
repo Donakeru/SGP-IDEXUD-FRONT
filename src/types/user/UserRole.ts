@@ -1,4 +1,4 @@
-export type UserRole = {
-  codigo: string
-  nombre: string
-}
+import type { Role } from './Role'
+
+/** Alias conservado por compatibilidad. Usa `Role`. */
+export type UserRole = Role

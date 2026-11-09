@@ -1,6 +1,10 @@
 import { httpClient } from './http/httpClient'
 import type { UserResponse } from '../types/user/UserResponse'
 
+/**
+ * `GET /users/{id_usuario}`. Lanza `HttpError` (con `status`) si el backend
+ * responde fuera de 2xx; por ejemplo 404 cuando el usuario no existe.
+ */
 export async function getUserById(
   idUsuario: number | string,
   signal?: AbortSignal,
@@ -11,14 +15,8 @@ export async function getUserById(
     throw new Error('El id del usuario es obligatorio.')
   }
 
-  const response = await httpClient.get(
+  return httpClient.getJson<UserResponse>(
     `/users/${encodeURIComponent(normalizedId)}`,
     signal,
   )
-
-  if (!response.ok) {
-    throw new Error(`No fue posible consultar el usuario (${response.status}).`)
-  }
-
-  return response.json() as Promise<UserResponse>
 }
