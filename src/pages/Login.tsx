@@ -7,54 +7,107 @@ import {
   UserIcon,
 } from '@heroicons/react/24/outline'
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom'
 import Alert from '../components/Alert'
-import Field from '../components/forms/Field'
-import Input from '../components/forms/Input'
-import { getUserById } from '../services/UserService'
-import type { UserResponse } from '../types/user/UserResponse'
+import Button from '../components/Button'
+import TextField from '../components/forms/TextField'
+import { useAuth } from '../auth/useAuth'
+import { usePermissions } from '../auth/usePermissions'
+import { getDefaultPath } from '../router/routeConfig'
+import { AuthError, parseUserId } from '../services/authService'
 import logo from '../assets/logo_idexud.png'
 
-const DEMO_USER_ID = 1
+type FieldErrors = {
+  userId?: string
+  password?: string
+}
+
+const USER_ID_FIELD = 'login-user-id'
+const PASSWORD_FIELD = 'login-password'
+
+/** Solo se aceptan rutas internas, para evitar redirecciones abiertas. */
+function isSafeInternalPath(path: unknown): path is string {
+  return (
+    typeof path === 'string' &&
+    path.startsWith('/') &&
+    !path.startsWith('//') &&
+    !path.startsWith('/login')
+  )
+}
+
+function validate(userId: string, password: string): FieldErrors {
+  const errors: FieldErrors = {}
+
+  if (!userId.trim()) {
+    errors.userId = 'Ingresa tu ID de usuario.'
+  } else if (parseUserId(userId) === null) {
+    errors.userId = 'El ID debe ser un número entero positivo.'
+  }
+
+  if (!password) {
+    errors.password = 'Ingresa tu contraseña.'
+  }
+
+  return errors
+}
 
 export default function Login() {
+  const location = useLocation()
+  const { isAuthenticated, login } = useAuth()
+  const { can } = usePermissions()
 
-  const navigate = useNavigate();
-
-  const [email, setEmail] = useState('')
+  const [userId, setUserId] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [user, setUser] = useState<UserResponse | null>(null)
-  const [userError, setUserError] = useState<string | null>(null)
-  const [isLoadingUser, setIsLoadingUser] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  if (isAuthenticated) {
+    const from = (location.state as { from?: unknown } | null)?.from
+
+    return (
+      <Navigate to={isSafeInternalPath(from) ? from : getDefaultPath(can)} replace />
+    )
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setUser(null)
-    setUserError(null)
-    setIsLoadingUser(true)
+
+    if (isSubmitting) {
+      return
+    }
+
+    setSubmitError(null)
+
+    const errors = validate(userId, password)
+    setFieldErrors(errors)
+
+    if (errors.userId || errors.password) {
+      document.getElementById(errors.userId ? USER_ID_FIELD : PASSWORD_FIELD)?.focus()
+      return
+    }
+
+    setIsSubmitting(true)
 
     try {
-      const userResponse = await getUserById(DEMO_USER_ID)
-      console.log(userResponse)
-      setUser(userResponse)
-      navigate('/dashboard')
+      // Al iniciar sesión, este componente redirige solo (ver `isAuthenticated`).
+      await login({ userId, password }, { remember: rememberMe })
     } catch (error) {
-      setUserError(
-        error instanceof Error
+      setSubmitError(
+        error instanceof AuthError
           ? error.message
-          : 'No fue posible consultar la información del usuario.',
+          : 'No fue posible iniciar sesión. Inténtalo de nuevo.',
       )
-    } finally {
-      setIsLoadingUser(false)
+      setIsSubmitting(false)
     }
   }
 
   return (
     <main className="grid min-h-screen bg-white lg:grid-cols-[60%_40%]">
       <section
-        className="relative hidden min-h-screen overflow-hidden bg-[#1f315f] lg:block"
+        className="relative hidden min-h-screen overflow-hidden bg-primary lg:block"
         aria-label="Imagen institucional"
       >
         {/* <img
@@ -83,46 +136,43 @@ export default function Login() {
             </p>
           </div>
 
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <Field label="Correo institucional" required>
-              <div className="relative">
-                <UserIcon
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
-                  strokeWidth={1.8}
-                  aria-hidden="true"
-                />
-                <Input
-                  className="pl-9"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="nombre@udistrital.edu.co"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-            </Field>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+            <TextField
+              id={USER_ID_FIELD}
+              label="ID de usuario"
+              required
+              type="text"
+              inputMode="numeric"
+              autoComplete="username"
+              placeholder="Ej. 1"
+              value={userId}
+              error={fieldErrors.userId}
+              // TODO: acceso temporal de desarrollo. Pasar a correo o token compartido (ver authService).
+              help="Acceso temporal de desarrollo: usa tu ID numérico de usuario."
+              leading={<UserIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />}
+              disabled={isSubmitting}
+              onChange={(event) => {
+                setUserId(event.target.value)
+                setFieldErrors((current) => ({ ...current, userId: undefined }))
+              }}
+            />
 
-            <Field label="Contraseña" required>
-              <div className="relative">
-                <LockClosedIcon
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
-                  strokeWidth={1.8}
-                  aria-hidden="true"
-                />
-                <Input
-                  className="px-9"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Ingresa tu contraseña"
-                  autoComplete="current-password"
-                  required
-                />
+            <TextField
+              id={PASSWORD_FIELD}
+              label="Contraseña"
+              required
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="Ingresa tu contraseña"
+              value={password}
+              error={fieldErrors.password}
+              leading={<LockClosedIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />}
+              trailing={
                 <button
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:bg-primary-soft hover:text-primary-strong"
+                  className="rounded p-1 text-muted hover:bg-primary-soft hover:text-primary-strong"
                   type="button"
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-pressed={showPassword}
                   onClick={() => setShowPassword((visible) => !visible)}
                 >
                   {showPassword ? (
@@ -131,8 +181,13 @@ export default function Login() {
                     <EyeIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />
                   )}
                 </button>
-              </div>
-            </Field>
+              }
+              disabled={isSubmitting}
+              onChange={(event) => {
+                setPassword(event.target.value)
+                setFieldErrors((current) => ({ ...current, password: undefined }))
+              }}
+            />
 
             <div className="flex items-center justify-between gap-3 text-[9px]">
               <label className="flex items-center gap-1.5 text-muted">
@@ -140,6 +195,7 @@ export default function Login() {
                   className="size-3.5 accent-primary"
                   type="checkbox"
                   checked={rememberMe}
+                  disabled={isSubmitting}
                   onChange={(event) => setRememberMe(event.target.checked)}
                 />
                 Recordarme
@@ -152,34 +208,24 @@ export default function Login() {
               </button>
             </div>
 
-            <button
-              className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1f315f] px-4 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(31,49,95,0.2)] transition-colors hover:bg-[#17264b]"
+            <Button
+              className="mt-1 !h-11 !text-[10px]"
               type="submit"
-              disabled={isLoadingUser}
+              isLoading={isSubmitting}
+              loadingText="Ingresando…"
             >
-              {isLoadingUser ? 'Consultando usuario…' : 'Ingresar a la plataforma'}
+              Ingresar a la plataforma
               <ArrowRightIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />
-            </button>
+            </Button>
           </form>
 
-          {user && (
-            <Alert
-              open
-              variant="success"
-              title={`Usuario consultado: ${user.nombre}`}
-              description={`${user.correo} · ${user.roles.map((role) => role.nombre).join(', ')}`}
-              icon={<UserIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />}
-              placement="inline"
-              className="mt-5"
-            />
-          )}
-          {userError && (
+          {submitError && (
             <Alert
               open
               variant="danger"
               role="alert"
-              title="No fue posible consultar el usuario"
-              description={userError}
+              title="No fue posible iniciar sesión"
+              description={submitError}
               icon={<QuestionMarkCircleIcon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />}
               placement="inline"
               className="mt-5"
