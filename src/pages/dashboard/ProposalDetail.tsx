@@ -3,14 +3,21 @@ import {
   ChatBubbleLeftRightIcon,
   DocumentTextIcon,
   EyeIcon,
-  PaperAirplaneIcon,
   PaperClipIcon,
 } from '@heroicons/react/24/outline'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { getRoleLabel } from '../../auth/userDisplay'
+import { useAuth } from '../../auth/useAuth'
+import Alert from '../../components/Alert'
+import Can from '../../components/auth/Can'
+import CommentComposer from '../../components/comments/CommentComposer'
+import CommentList from '../../components/comments/CommentList'
 import FileInput from '../../components/forms/FileInput'
-import Select from '../../components/forms/Select'
-import TextArea from '../../components/forms/TextArea'
-import { useNavigate } from 'react-router-dom'
+import Spinner from '../../components/Spinner'
+import { createComment, getComments } from '../../services/commentService'
+import { isAbortError } from '../../services/http/errors'
+import type { Comment, NewCommentInput } from '../../types/comment/Comment'
 
 type DetailDocument = {
   name: string
@@ -18,19 +25,6 @@ type DetailDocument = {
   uploader: string
   date: string
   size: string
-}
-
-type CommentCategory = 'Aprobado con observaciones' | 'Rechazado' | 'Visto bueno'
-
-type ProposalComment = {
-  text: string
-  author: string
-  role: string
-  initials: string
-  date: string
-  elapsed: string
-  category: CommentCategory
-  tone: 'blue' | 'gold' | 'slate'
 }
 
 const documents: DetailDocument[] = [
@@ -56,45 +50,6 @@ const documents: DetailDocument[] = [
     size: '640 KB',
   },
 ]
-
-const comments: ProposalComment[] = [
-  {
-    text: 'Falta el certificado de existencia y representación legal de la entidad.',
-    author: 'Laura Gómez',
-    role: 'Jurídica',
-    initials: 'LG',
-    date: '07 oct 2026, 10:42',
-    elapsed: 'hace 5 d',
-    category: 'Aprobado con observaciones',
-    tone: 'blue',
-  },
-  {
-    text: 'Al proyecto le hace falta detallar el presupuesto por rubros.',
-    author: 'Carlos Ruiz',
-    role: 'Licitaciones',
-    initials: 'CR',
-    date: '08 oct 2026, 15:18',
-    elapsed: 'hace 4 d',
-    category: 'Rechazado',
-    tone: 'gold',
-  },
-  {
-    text: 'Se cargó la versión 2 con el presupuesto ajustado.',
-    author: 'Equipo técnico',
-    role: 'Formulación de proyectos',
-    initials: 'ET',
-    date: '12 oct 2026, 09:06',
-    elapsed: 'hace 2 h',
-    category: 'Visto bueno',
-    tone: 'slate',
-  },
-]
-
-const categoryStyles: Record<CommentCategory, string> = {
-  'Aprobado con observaciones': 'bg-warning-soft text-warning',
-  Rechazado: 'bg-danger-soft text-danger',
-  'Visto bueno': 'bg-success-soft text-success',
-}
 
 function DetailCard({
   title,
@@ -123,49 +78,64 @@ function DetailCard({
   )
 }
 
-function CommentItem({ comment }: { comment: ProposalComment }) {
-  return (
-    <article className="grid gap-3 border-b border-line-soft px-3.5 py-3 last:border-0 md:grid-cols-[minmax(0,1fr)_160px]">
-      <div className="min-w-0">
-        <span className={`inline-flex rounded px-1.5 py-1 text-[7px] font-semibold ${categoryStyles[comment.category]}`}>
-          {comment.category}
-        </span>
-        <p className="mt-2 text-[9px] leading-4 text-body">{comment.text}</p>
-        <button
-          className="mt-2 border-0 bg-transparent p-0 text-[8px] font-semibold text-primary-strong hover:underline"
-          type="button"
-        >
-          Responder
-        </button>
-      </div>
-      <div className="flex items-start gap-2 md:justify-end">
-        <span className={`grid size-7 shrink-0 place-items-center rounded-full text-[8px] font-bold text-white ${
-          comment.tone === 'gold'
-            ? 'bg-warning'
-            : comment.tone === 'slate'
-              ? 'bg-slate-600'
-              : 'bg-primary'
-        }`}>
-          {comment.initials}
-        </span>
-        <span className="min-w-0">
-          <strong className="block truncate text-[8px] font-semibold text-ink">{comment.author}</strong>
-          <small className="block truncate text-[7px] text-muted">{comment.role}</small>
-          <small className="mt-1 block text-[7px] text-muted">
-            {comment.date} · {comment.elapsed}
-          </small>
-        </span>
-      </div>
-    </article>
-  )
-}
-
 export default function ProposalDetail() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { user } = useAuth()
+  // TODO: el detalle de la propuesta aún es de ejemplo (no hay endpoint). Los
+  // comentarios sí se piden por `id` de la URL, como llega desde la tabla y Revisión.
+  const proposalId = searchParams.get('id') ?? 'sin-id'
   const [selectedDocument, setSelectedDocument] = useState(documents[0].name)
-  const [comment, setComment] = useState('')
-  const [category, setCategory] = useState<CommentCategory>('Visto bueno')
-  const [documentReference, setDocumentReference] = useState(documents[0].name)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [isLoadingComments, setIsLoadingComments] = useState(true)
+  const [commentsError, setCommentsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadComments = async () => {
+      setIsLoadingComments(true)
+      setCommentsError(null)
+
+      try {
+        const loaded = await getComments(proposalId, controller.signal)
+
+        if (!controller.signal.aborted) {
+          setComments(loaded)
+        }
+      } catch (error) {
+        if (!isAbortError(error) && !controller.signal.aborted) {
+          setCommentsError(
+            error instanceof Error
+              ? error.message
+              : 'No fue posible cargar los comentarios.',
+          )
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingComments(false)
+        }
+      }
+    }
+
+    void loadComments()
+
+    return () => controller.abort()
+  }, [proposalId])
+
+  const publishComment = async (input: NewCommentInput) => {
+    if (!user) {
+      throw new Error('Inicia sesión para publicar un comentario.')
+    }
+
+    const created = await createComment(proposalId, input, {
+      id: user.id_usuario,
+      name: user.nombre,
+      role: getRoleLabel(user) || 'Sin rol asignado',
+    })
+
+    setComments((current) => [...current, created])
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1216px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10">
@@ -264,58 +234,35 @@ export default function ProposalDetail() {
 
         <DetailCard
           title="Comentarios"
-          subtitle="3 comentarios · Orden cronológico"
+          subtitle={`${comments.length} ${comments.length === 1 ? 'comentario' : 'comentarios'} · Orden cronológico`}
           icon={<ChatBubbleLeftRightIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />}
         >
-          <div>
-            {comments.map((item) => (
-              <CommentItem comment={item} key={`${item.author}-${item.date}`} />
-            ))}
-          </div>
-
-          <div className="border-t border-line-soft p-3.5">
-            <strong className="text-[10px] font-semibold text-ink">Nuevo comentario</strong>
-            <TextArea
-              className="mt-2 !min-h-[72px] !text-[9px]"
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              placeholder="Escribe una observación clara para el equipo…"
-            />
-            <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] sm:items-end">
-              <label className="flex flex-col gap-1">
-                <span className="text-[7px] font-semibold text-muted">Categoría</span>
-                <Select
-                  className="!min-h-[30px] h-[30px] px-2 text-[8px]"
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value as CommentCategory)}
-                >
-                  <option>Visto bueno</option>
-                  <option>Aprobado con observaciones</option>
-                  <option>Rechazado</option>
-                </Select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[7px] font-semibold text-muted">Documento relacionado (opcional)</span>
-                <Select
-                  className="!min-h-[30px] h-[30px] px-2 text-[8px]"
-                  value={documentReference}
-                  onChange={(event) => setDocumentReference(event.target.value)}
-                >
-                  {documents.map((document) => (
-                    <option key={document.name} value={document.name}>{document.name}</option>
-                  ))}
-                </Select>
-              </label>
-              <button
-                className="inline-flex h-[30px] items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-[8px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                type="button"
-                disabled={!comment.trim()}
-              >
-                <PaperAirplaneIcon className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
-                Publicar comentario
-              </button>
+          {isLoadingComments ? (
+            <div className="flex items-center justify-center gap-2 px-4 py-10 text-[10px] text-muted">
+              <Spinner label="Cargando comentarios" />
+              Cargando comentarios…
             </div>
-          </div>
+          ) : commentsError ? (
+            <div className="p-3.5">
+              <Alert
+                open
+                variant="danger"
+                role="alert"
+                placement="inline"
+                title="No fue posible cargar los comentarios"
+                description={commentsError}
+              />
+            </div>
+          ) : (
+            <CommentList comments={comments} />
+          )}
+
+          <Can capability="comentar">
+            <CommentComposer
+              documents={documents.map((document) => document.name)}
+              onSubmit={publishComment}
+            />
+          </Can>
         </DetailCard>
       </div>
     </div>
