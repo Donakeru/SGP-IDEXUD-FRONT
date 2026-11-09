@@ -1,6 +1,7 @@
 import { httpClient } from './http/httpClient'
 import type { CreateProposalDto } from '../types/proposal/CreateProposalDto'
 import type { ProposalListResponse } from '../types/proposal/ProposalListResponse'
+import type { ReviewProposal } from '../types/proposal/ReviewProposal'
 
 
 export function buildCreateProposalFormData(dto: CreateProposalDto) {
@@ -67,4 +68,22 @@ export async function getProposals(
   }
 
   return response.json() as Promise<ProposalListResponse>
+}
+
+export async function getReviewProposals(
+  signal?: AbortSignal,
+): Promise<ReviewProposal[]> {
+  const response = await httpClient.get('/proposal/review', signal)
+
+  if (!response.ok) {
+    throw new Error(`No fue posible consultar la bandeja de revisión (${response.status}).`)
+  }
+
+  const data: unknown = await response.json()
+
+  if (!Array.isArray(data)) {
+    throw new Error('La respuesta de revisión no tiene el formato esperado.')
+  }
+
+  return data as ReviewProposal[]
 }

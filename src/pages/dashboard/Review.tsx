@@ -6,6 +6,12 @@ import {
 } from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import TextArea from '../../components/forms/TextArea'
+import type {
+  HistoryEvent,
+  ReviewProposal,
+  ReviewStatus,
+} from '../../types/proposal/ReviewProposal'
+import { getReviewProposals } from '../../services/proposalService'
 
 /**
  * Bandeja de revisión para el perfil administrativo/revisor.
@@ -15,41 +21,8 @@ import TextArea from '../../components/forms/TextArea'
  * IDEXUD (CU-09, CU-10, CU-11). Qué acciones se muestran depende del estado de
  * la propuesta, no del usuario.
  */
-
-type ReviewStatus =
-  | 'Registrada'
-  | 'En revisión de Dirección'
-  | 'Aceptada'
-  | 'Rechazada'
-
 type ReviewAction = 'forward' | 'dismiss' | 'approve' | 'disapprove'
 type QueueFilter = 'all' | 'entry' | 'direction' | 'resolved'
-
-type HistoryEvent = {
-  id: string
-  kind: 'observation' | 'decision'
-  text: string
-  author: string
-  date: string
-}
-
-type ReviewProposal = {
-  id: string
-  title: string
-  entity: string
-  applicantType: 'Entidad externa' | 'Facultad' | 'Instituto' | 'Rectoría'
-  nit?: string
-  contactName: string
-  contactEmail: string
-  proposalType: string
-  description: string
-  submittedAt: string
-  status: ReviewStatus
-  dataComplete: boolean
-  hasFacultyApproval: boolean
-  documents: { name: string; size: string }[]
-  history: HistoryEvent[]
-}
 
 type ActionConfig = {
   label: string
@@ -117,12 +90,12 @@ const actionConfig: Record<ReviewAction, ActionConfig> = {
 }
 
 const actionsByStatus: Partial<Record<ReviewStatus, ReviewAction[]>> = {
-  Registrada: ['forward', 'dismiss'],
+  Registrado: ['forward', 'dismiss'],
   'En revisión de Dirección': ['approve', 'disapprove'],
 }
 
 const stageByStatus: Record<ReviewStatus, Exclude<QueueFilter, 'all'>> = {
-  Registrada: 'entry',
+  Registrado: 'entry',
   'En revisión de Dirección': 'direction',
   Aceptada: 'resolved',
   Rechazada: 'resolved',
@@ -135,218 +108,11 @@ const stageLabel: Record<Exclude<QueueFilter, 'all'>, string> = {
 }
 
 const statusStyles: Record<ReviewStatus, string> = {
-  Registrada: 'bg-primary-soft text-primary-strong',
+  Registrado: 'bg-primary-soft text-primary-strong',
   'En revisión de Dirección': 'bg-warning-soft text-warning',
   Aceptada: 'bg-success-soft text-success',
   Rechazada: 'bg-danger-soft text-danger',
 }
-
-const initialProposals: ReviewProposal[] = [
-  {
-    id: 'PROP-2026-018',
-    title: 'Diplomado en seguridad digital para docentes',
-    entity: 'Facultad de Ingeniería',
-    applicantType: 'Facultad',
-    contactName: 'Sandra Patiño',
-    contactEmail: 'spatino@udistrital.edu.co',
-    proposalType: 'Educación continuada',
-    description:
-      'Programa de formación para docentes en prácticas seguras de manejo de información y plataformas digitales institucionales.',
-    submittedAt: '12 oct 2026',
-    status: 'Registrada',
-    dataComplete: true,
-    hasFacultyApproval: false,
-    documents: [{ name: 'Propuesta_tecnica.pdf', size: '2,4 MB' }],
-    history: [
-      {
-        id: 'h-018-1',
-        kind: 'decision',
-        text: 'Propuesta registrada por el postulante.',
-        author: 'Sistema',
-        date: '12 oct 2026, 09:15',
-      },
-    ],
-  },
-  {
-    id: 'PROP-2026-017',
-    title: 'Convenio de formación en energías renovables',
-    entity: 'Fundación Energía Viva',
-    applicantType: 'Entidad externa',
-    nit: '900.123.456-1',
-    contactName: 'Camilo Restrepo',
-    contactEmail: 'crestrepo@energiaviva.org',
-    proposalType: 'Consultoría',
-    description:
-      'Convenio para capacitar técnicos en instalación y mantenimiento de sistemas solares fotovoltaicos en la región.',
-    submittedAt: '11 oct 2026',
-    status: 'Registrada',
-    dataComplete: true,
-    hasFacultyApproval: false,
-    documents: [
-      { name: 'Propuesta_economica.xlsx', size: '640 KB' },
-      { name: 'Certificado_existencia.pdf', size: '1,1 MB' },
-    ],
-    history: [
-      {
-        id: 'h-017-1',
-        kind: 'decision',
-        text: 'Propuesta registrada por el postulante.',
-        author: 'Sistema',
-        date: '11 oct 2026, 16:40',
-      },
-    ],
-  },
-  {
-    id: 'PROP-2026-016',
-    title: 'Fortalecimiento de capacidades digitales',
-    entity: 'Caja de Compensación Familiar',
-    applicantType: 'Entidad externa',
-    nit: '860.007.336-1',
-    contactName: 'Paola Ortiz',
-    contactEmail: 'portiz@cajafamiliar.co',
-    proposalType: 'Servicios académicos',
-    description: 'Ruta de formación digital para afiliados.',
-    submittedAt: '10 oct 2026',
-    status: 'Registrada',
-    dataComplete: false,
-    hasFacultyApproval: false,
-    documents: [],
-    history: [
-      {
-        id: 'h-016-1',
-        kind: 'decision',
-        text: 'Propuesta registrada por el postulante.',
-        author: 'Sistema',
-        date: '10 oct 2026, 11:02',
-      },
-    ],
-  },
-  {
-    id: 'PROP-2026-013',
-    title: 'Diplomado en gestión pública territorial',
-    entity: 'Alcaldía Local de Suba',
-    applicantType: 'Entidad externa',
-    nit: '899.999.061-9',
-    contactName: 'Julián Mora',
-    contactEmail: 'jmora@suba.gov.co',
-    proposalType: 'Educación continuada',
-    description:
-      'Formación de 120 horas para funcionarios locales en planeación y contratación territorial.',
-    submittedAt: '29 sep 2026',
-    status: 'En revisión de Dirección',
-    dataComplete: true,
-    hasFacultyApproval: false,
-    documents: [
-      { name: 'Propuesta_diplomado.pdf', size: '3,2 MB' },
-      { name: 'Presupuesto.xlsx', size: '512 KB' },
-    ],
-    history: [
-      {
-        id: 'h-013-1',
-        kind: 'decision',
-        text: 'Propuesta registrada por el postulante.',
-        author: 'Sistema',
-        date: '29 sep 2026, 10:20',
-      },
-      {
-        id: 'h-013-2',
-        kind: 'observation',
-        text: 'Documentación completa. Se sugiere revisar el cronograma de ejecución.',
-        author: REVIEWER_NAME,
-        date: '30 sep 2026, 14:05',
-      },
-      {
-        id: 'h-013-3',
-        kind: 'decision',
-        text: 'Propuesta validada y remitida a Dirección.',
-        author: REVIEWER_NAME,
-        date: '30 sep 2026, 14:07',
-      },
-    ],
-  },
-  {
-    id: 'PROP-2026-010',
-    title: 'Escuela de liderazgo comunitario',
-    entity: 'Instituto Distrital de Participación',
-    applicantType: 'Instituto',
-    contactName: 'Marcela Duarte',
-    contactEmail: 'mduarte@idpac.gov.co',
-    proposalType: 'Proyecto especial',
-    description:
-      'Escuela de formación para líderes de juntas de acción comunal con enfoque de participación ciudadana.',
-    submittedAt: '12 sep 2026',
-    status: 'En revisión de Dirección',
-    dataComplete: true,
-    hasFacultyApproval: false,
-    documents: [{ name: 'Propuesta_escuela.pdf', size: '2,0 MB' }],
-    history: [
-      {
-        id: 'h-010-1',
-        kind: 'decision',
-        text: 'Propuesta registrada por el postulante.',
-        author: 'Sistema',
-        date: '12 sep 2026, 08:45',
-      },
-      {
-        id: 'h-010-2',
-        kind: 'decision',
-        text: 'Propuesta validada y remitida a Dirección.',
-        author: REVIEWER_NAME,
-        date: '13 sep 2026, 09:30',
-      },
-    ],
-  },
-  {
-    id: 'PROP-2026-012',
-    title: 'Laboratorio de innovación educativa',
-    entity: 'Secretaría de Educación',
-    applicantType: 'Entidad externa',
-    nit: '899.999.061-9',
-    contactName: 'Ana Torres',
-    contactEmail: 'atorres@educacionbogota.edu.co',
-    proposalType: 'Proyecto especial',
-    description: 'Laboratorio de prototipado de estrategias pedagógicas.',
-    submittedAt: '24 sep 2026',
-    status: 'Aceptada',
-    dataComplete: true,
-    hasFacultyApproval: false,
-    documents: [{ name: 'Propuesta_laboratorio.pdf', size: '2,8 MB' }],
-    history: [
-      {
-        id: 'h-012-1',
-        kind: 'decision',
-        text: 'Propuesta inicial aprobada. Expediente digital creado.',
-        author: REVIEWER_NAME,
-        date: '27 sep 2026, 11:00',
-      },
-    ],
-  },
-  {
-    id: 'PROP-2026-009',
-    title: 'Formación en analítica de datos',
-    entity: 'Empresa de Acueducto de Bogotá',
-    applicantType: 'Entidad externa',
-    nit: '899.999.094-1',
-    contactName: 'Luis Herrera',
-    contactEmail: 'lherrera@acueducto.com.co',
-    proposalType: 'Educación continuada',
-    description: 'Curso de analítica de datos para personal técnico.',
-    submittedAt: '05 sep 2026',
-    status: 'Rechazada',
-    dataComplete: true,
-    hasFacultyApproval: false,
-    documents: [{ name: 'Propuesta_analitica.pdf', size: '1,9 MB' }],
-    history: [
-      {
-        id: 'h-009-1',
-        kind: 'decision',
-        text: 'Propuesta desaprobada en la revisión de Dirección. Motivo: el alcance excede la capacidad actual del equipo.',
-        author: REVIEWER_NAME,
-        date: '08 sep 2026, 15:10',
-      },
-    ],
-  },
-]
 
 const filterOptions: { value: QueueFilter; label: string }[] = [
   { value: 'all', label: 'Todas' },
@@ -546,7 +312,7 @@ function ReviewActionsPanel({
   const stage = stageByStatus[proposal.status]
   const actions = actionsByStatus[proposal.status]
   const requirements =
-    proposal.status === 'Registrada' ? getForwardRequirements(proposal) : []
+    proposal.status === 'Registrado' ? getForwardRequirements(proposal) : []
   const missingRequirements = requirements.filter((item) => !item.met)
   const canForward = missingRequirements.length === 0
 
@@ -577,7 +343,7 @@ function ReviewActionsPanel({
             value={observation}
             onChange={(event) => onObservationChange(event.target.value)}
             placeholder={
-              proposal.status === 'Registrada'
+              proposal.status === 'Registrado'
                 ? 'Anota lo revisado en los datos y documentos.'
                 : 'Agrega observaciones sobre lo registrado en la revisión de entrada.'
             }
@@ -636,7 +402,7 @@ function ReviewActionsPanel({
               </button>
             )
           })}
-          {proposal.status === 'Registrada' && !canForward && (
+          {proposal.status === 'Registrado' && !canForward && (
             <p className="text-[10px] leading-4 text-muted">
               Completa los requisitos pendientes para poder remitir. Si no se pueden
               cumplir, puedes desestimar la propuesta.
@@ -649,14 +415,54 @@ function ReviewActionsPanel({
 }
 
 export default function Review() {
-  const [proposals, setProposals] = useState<ReviewProposal[]>(initialProposals)
+  const [proposals, setProposals] = useState<ReviewProposal[]>([])
   const [filter, setFilter] = useState<QueueFilter>('all')
-  const [selectedId, setSelectedId] = useState(initialProposals[0].id)
+  const [selectedId, setSelectedId] = useState('')
   const [observation, setObservation] = useState('')
   const [dialogAction, setDialogAction] = useState<ReviewAction | null>(null)
   const [reason, setReason] = useState('')
   const [showReasonError, setShowReasonError] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadReviewProposals = async () => {
+      setIsLoading(true)
+      setLoadError(null)
+
+      try {
+        const reviewProposals = await getReviewProposals(controller.signal)
+
+        if (controller.signal.aborted) {
+          return
+        }
+
+        if (reviewProposals.length > 0) {
+          setProposals(reviewProposals)
+          setSelectedId(reviewProposals[0].id)
+        }
+      } catch (requestError) {
+        if (!controller.signal.aborted) {
+          setLoadError(
+            requestError instanceof Error
+              ? requestError.message
+              : 'No fue posible cargar la bandeja de revisión.',
+          )
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadReviewProposals()
+
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     if (!toast) {
@@ -725,6 +531,10 @@ export default function Review() {
   }
 
   const saveObservation = () => {
+    if (!selected) {
+      return
+    }
+
     const text = observation.trim()
 
     if (!text) {
@@ -745,7 +555,7 @@ export default function Review() {
   const closeDialog = () => setDialogAction(null)
 
   const confirmAction = () => {
-    if (!dialogAction || !activeConfig) {
+    if (!selected || !dialogAction || !activeConfig) {
       return
     }
 
@@ -771,6 +581,16 @@ export default function Review() {
     setToast(activeConfig.successMessage)
   }
 
+  if (!selected) {
+    return (
+      <div className="mx-auto w-full max-w-[1216px] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
+        <div className="rounded-lg border border-line bg-white px-4 py-10 text-center text-xs text-muted">
+          {isLoading ? 'Cargando propuestas de revisión…' : 'No hay propuestas disponibles para revisar.'}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1216px] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
       <div className="mb-[22px] flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -790,6 +610,17 @@ export default function Review() {
           Perfil: {REVIEWER_NAME}
         </span>
       </div>
+
+      {isLoading && (
+        <div className="mb-4 rounded-lg border border-line bg-white px-4 py-3 text-[10px] text-muted">
+          Cargando propuestas de revisión…
+        </div>
+      )}
+      {loadError && (
+        <div className="mb-4 rounded-lg border border-danger-line bg-danger-subtle px-4 py-3 text-[10px] text-danger" role="alert">
+          {loadError}
+        </div>
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
         <section
@@ -858,14 +689,14 @@ export default function Review() {
 
         <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div className="flex min-w-0 flex-col gap-4">
-            <Panel title={selected.title} subtitle={`${selected.id} · Registrada el ${selected.submittedAt}`}>
+            <Panel title={selected.title} subtitle={`${selected.id} · Registrado el ${selected.submittedAt}`}>
               <div className="flex flex-col gap-4 p-4">
                 <StatusBadge status={selected.status} />
                 <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                   <DataRow label="Entidad o dependencia" value={selected.entity} />
                   <DataRow label="Tipo de postulante" value={selected.applicantType} />
                   <DataRow label="NIT o identificación" value={selected.nit ?? 'No aplica'} />
-                  <DataRow label="Tipo de propuesta" value={selected.proposalType} />
+                  <DataRow label="Tipo de propuesta" value={selected.proposalType ?? 'No especificado'} />
                   <DataRow label="Contacto responsable" value={selected.contactName} />
                   <DataRow label="Correo electrónico" value={selected.contactEmail} />
                 </dl>
