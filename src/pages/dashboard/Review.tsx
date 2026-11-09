@@ -1,10 +1,14 @@
 import {
   CheckIcon,
+  ChevronRightIcon,
   DocumentTextIcon,
   PaperAirplaneIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getRoleLabel } from '../../auth/userDisplay'
+import { useAuth } from '../../auth/useAuth'
 import TextArea from '../../components/forms/TextArea'
 import type {
   HistoryEvent,
@@ -14,13 +18,26 @@ import type {
 import { getReviewProposals } from '../../services/proposalService'
 
 /**
- * Bandeja de revisión para el perfil administrativo/revisor.
+ * Bandeja de revisión: lista de propuestas, datos, documentos e historial, con
+ * acceso al detalle de cada propuesta.
  *
- * Mientras no estén definidos los cargos, un único perfil "Revisor" cubre las
- * acciones de la Asistente de Dirección (CU-06, CU-07, CU-08) y de Dirección
- * IDEXUD (CU-09, CU-10, CU-11). Qué acciones se muestran depende del estado de
- * la propuesta, no del usuario.
+ * Qué acciones se muestran depende del estado de la propuesta, no del usuario.
+ * Se ve con la capacidad `ver_revision` (ver router/routeConfig.ts).
  */
+
+/**
+ * Interruptor de las decisiones de revisión (Remitir, Desestimar, Aprobar,
+ * Desaprobar). Con `false` los botones siguen visibles pero no hacen nada: no
+ * llaman al backend, no cambian el estado y no muestran mensajes.
+ *
+ * TODO: conectar estas acciones cuando existan los endpoints y la capacidad
+ * `decidir_propuesta` esté asignada a los roles (ver auth/permissions.ts):
+ *   - Remitir / Desestimar → asistente de dirección.
+ *   - Aprobar / Desaprobar → dirección.
+ * El código de los diálogos y de los cambios de estado se conserva a propósito.
+ */
+const DECISION_ACTIONS_ENABLED: boolean = false
+
 type ReviewAction = 'forward' | 'dismiss' | 'approve' | 'disapprove'
 type QueueFilter = 'all' | 'entry' | 'direction' | 'resolved'
 
@@ -35,8 +52,6 @@ type ActionConfig = {
   historyText: string
   successMessage: string
 }
-
-const REVIEWER_NAME = 'Revisor administrativo'
 
 const actionConfig: Record<ReviewAction, ActionConfig> = {
   forward: {
@@ -415,6 +430,10 @@ function ReviewActionsPanel({
 }
 
 export default function Review() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const authorName = user?.nombre ?? 'Usuario'
+  const profileLabel = user ? getRoleLabel(user) : ''
   const [proposals, setProposals] = useState<ReviewProposal[]>([])
   const [filter, setFilter] = useState<QueueFilter>('all')
   const [selectedId, setSelectedId] = useState('')
@@ -515,7 +534,7 @@ export default function Review() {
                 {
                   ...event,
                   id: `${proposalId}-${Date.now()}`,
-                  author: REVIEWER_NAME,
+                  author: authorName,
                   date: now,
                 },
               ],
@@ -547,6 +566,10 @@ export default function Review() {
   }
 
   const openAction = (action: ReviewAction) => {
+    if (!DECISION_ACTIONS_ENABLED) {
+      return
+    }
+
     setReason('')
     setShowReasonError(false)
     setDialogAction(action)
@@ -555,7 +578,7 @@ export default function Review() {
   const closeDialog = () => setDialogAction(null)
 
   const confirmAction = () => {
-    if (!selected || !dialogAction || !activeConfig) {
+    if (!DECISION_ACTIONS_ENABLED || !selected || !dialogAction || !activeConfig) {
       return
     }
 
@@ -607,7 +630,7 @@ export default function Review() {
         </div>
         <span className="inline-flex w-max items-center gap-1.5 rounded-full bg-primary-soft px-2.5 py-1.5 text-[10px] font-semibold text-primary-strong">
           <span className="size-[5px] rounded-full bg-current" />
-          Perfil: {REVIEWER_NAME}
+          Perfil: {profileLabel || 'Sin rol asignado'}
         </span>
       </div>
 
@@ -691,7 +714,21 @@ export default function Review() {
           <div className="flex min-w-0 flex-col gap-4">
             <Panel title={selected.title} subtitle={`${selected.id} · Registrado el ${selected.submittedAt}`}>
               <div className="flex flex-col gap-4 p-4">
-                <StatusBadge status={selected.status} />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <StatusBadge status={selected.status} />
+                  <button
+                    className="inline-flex h-[34px] items-center gap-1.5 rounded-md border border-line bg-white px-3 text-[10px] font-semibold text-body transition-colors hover:bg-primary-soft hover:text-primary-strong"
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/dashboard/proposals/detail?id=${encodeURIComponent(selected.id)}`,
+                      )
+                    }
+                  >
+                    Ver detalle
+                    <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                </div>
                 <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                   <DataRow label="Entidad o dependencia" value={selected.entity} />
                   <DataRow label="Tipo de postulante" value={selected.applicantType} />
