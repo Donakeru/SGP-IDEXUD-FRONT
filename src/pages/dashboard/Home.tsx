@@ -5,6 +5,9 @@ import InformativeCard, {
   type InformativeCardData,
 } from '../../components/InformativeCard'
 import ProposalsTable from '../../components/ProposalsTable'
+import Can from '../../components/auth/Can'
+import { getFirstName } from '../../auth/userDisplay'
+import { useAuth } from '../../auth/useAuth'
 
 type MetricIconName = 'folder' | 'clock' | 'check' | 'message'
 
@@ -51,6 +54,9 @@ const informativeCards: InformativeCardData[] = [
 ]
 
 export default function Home() {
+  const { user } = useAuth()
+  const firstName = user ? getFirstName(user.nombre) : ''
+
   return (
     <div className="mx-auto w-full max-w-[1216px] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
       <div className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -59,20 +65,22 @@ export default function Home() {
             Resumen general
           </span>
           <h1 className="mt-1 text-[25px] font-semibold leading-[33px] tracking-[-0.025em] text-ink">
-            Buenos días, Mariana
+            {firstName ? `Buenos días, ${firstName}` : 'Buenos días'}
           </h1>
           <p className="mt-1 text-xs text-muted">
             Este es el estado de las propuestas institucionales hoy.
           </p>
         </div>
 
-        <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-[11px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] transition-colors hover:bg-primary-hover"
-          to="/dashboard/proposals/new"
-        >
-          <PlusIcon className="size-[17px]" strokeWidth={1.8} aria-hidden="true" />
-          Nueva propuesta
-        </Link>
+        <Can capability="cargar_propuesta">
+          <Link
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-[11px] font-semibold text-white shadow-[0_2px_4px_rgba(255,78,0,0.18)] transition-colors hover:bg-primary-hover"
+            to="/dashboard/proposals/new"
+          >
+            <PlusIcon className="size-[17px]" strokeWidth={1.8} aria-hidden="true" />
+            Nueva propuesta
+          </Link>
+        </Can>
       </div>
 
       <InformativeCard cards={informativeCards} className="mb-[14px]" />

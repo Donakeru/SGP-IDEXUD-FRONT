@@ -6,6 +6,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/useAuth'
 import Alert from '../../components/Alert'
 import { createProposal } from '../../services/proposalService'
 import { getList } from '../../services/ListService'
@@ -84,6 +85,7 @@ function validateForm(
 
 export default function NewProposal() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [values, setValues] = useState<FormValues>(initialValues)
   const [touched, setTouched] = useState<Partial<Record<keyof FormValues, boolean>>>({})
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
@@ -532,7 +534,7 @@ export default function NewProposal() {
             </div>
             <div className="border-b border-line-soft py-2.5">
               <dt className="text-[8px] text-muted">Postulante</dt>
-              <dd className="mt-1 text-[9px] font-semibold text-ink">Mariana López</dd>
+              <dd className="mt-1 text-[9px] font-semibold text-ink">{user?.nombre ?? '—'}</dd>
             </div>
             <div className="py-2.5">
               <dt className="text-[8px] text-muted">Fecha de registro</dt>
