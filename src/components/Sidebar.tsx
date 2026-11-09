@@ -1,28 +1,26 @@
 import {
-  BuildingOffice2Icon,
-  ChartBarIcon,
   ClipboardDocumentCheckIcon,
-  Cog6ToothIcon,
   FolderIcon,
   Squares2X2Icon,
-  UserGroupIcon,
 } from '@heroicons/react/24/outline'
+import { useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-
-type SidebarIconName =
-  | 'dashboard'
-  | 'folder'
-  | 'review'
-  | 'users'
-  | 'report'
-  | 'building'
-  | 'settings'
+import { usePermissions } from '../auth/usePermissions'
+import {
+  getNavRoutes,
+  toAbsolutePath,
+  type AppRouteConfig,
+  type NavGroup,
+  type NavIconName,
+} from '../router/routeConfig'
 
 type SidebarItem = {
+  key: string
   label: string
-  icon: SidebarIconName
+  icon: NavIconName
   badge?: string
-  path?: string
+  path: string
+  isActive: boolean
 }
 
 type SidebarProps = {
@@ -30,38 +28,18 @@ type SidebarProps = {
   onClose: () => void
 }
 
-const principalItems: SidebarItem[] = [
-  { label: 'Inicio', icon: 'dashboard', path: '/dashboard' },
-  {
-    label: 'Propuestas',
-    icon: 'folder',
-    badge: '24',
-    path: '/dashboard/proposals',
-  },
-  { label: 'Revisión', icon: 'review', path: '/dashboard/review' },
-  // Labels temporales del mockup (depronto se usan despues)
-  //{ label: 'Comités', icon: 'users', badge: '4' },
-  //{ label: 'Reportes', icon: 'report' },
-]
-
-const administrationItems: SidebarItem[] = [
-  //Label temporal quizas posible uso
-  //{ label: 'Entidades', icon: 'building' },
-  { label: 'Usuarios y roles', icon: 'users' },
-  { label: 'Configuración', icon: 'settings' },
-]
+const groupLabels: Record<NavGroup, string> = {
+  principal: 'Principal',
+  administracion: 'Administración',
+}
 
 const iconComponents = {
   dashboard: Squares2X2Icon,
   folder: FolderIcon,
   review: ClipboardDocumentCheckIcon,
-  users: UserGroupIcon,
-  report: ChartBarIcon,
-  building: BuildingOffice2Icon,
-  settings: Cog6ToothIcon,
 }
 
-function SidebarIcon({ name }: { name: SidebarIconName }) {
+function SidebarIcon({ name }: { name: NavIconName }) {
   const Icon = iconComponents[name]
 
   return (
@@ -73,53 +51,53 @@ function SidebarIcon({ name }: { name: SidebarIconName }) {
   )
 }
 
+function isRouteActive(route: AppRouteConfig, pathname: string) {
+  const path = toAbsolutePath(route)
+
+  return route.nav?.exact ? pathname === path : pathname.startsWith(path)
+}
+
 function SidebarGroup({
   items,
   label,
-  activeLabel,
   onItemClick,
 }: {
   items: SidebarItem[]
   label: string
-  activeLabel: string
-  onItemClick: (path?: string) => void
+  onItemClick: (path: string) => void
 }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="px-2.5 pb-1.5 text-[9px] font-bold uppercase tracking-[0.09em] text-muted">
         {label}
       </span>
-      {items.map((item) => {
-        const isActive = item.label === activeLabel
-
-        return (
-          <button
-            className={`relative flex h-[42px] w-full items-center gap-[11px] rounded-[7px] border-0 px-[11px] text-left text-xs font-medium transition-colors hover:bg-wash hover:text-primary-strong ${
-              isActive
-                ? 'font-semibold text-primary-strong before:absolute before:left-0 before:h-6 before:w-[3px] before:rounded-r-[3px] before:bg-primary'
-                : 'text-body'
-            }`}
-            key={item.label}
-            type="button"
-            aria-current={isActive ? 'page' : undefined}
-            onClick={() => onItemClick(item.path)}
-          >
-            <SidebarIcon name={item.icon} />
-            <span className="flex-1">{item.label}</span>
-            {item.badge && (
-              <small
-                className={`grid h-5 min-w-[22px] place-items-center rounded-[10px] px-1.5 text-[9px] font-bold ${
-                  isActive
-                    ? 'bg-primary-tint text-primary-strong'
-                    : 'bg-chip text-muted'
-                }`}
-              >
-                {item.badge}
-              </small>
-            )}
-          </button>
-        )
-      })}
+      {items.map((item) => (
+        <button
+          className={`relative flex h-[42px] w-full items-center gap-[11px] rounded-[7px] border-0 px-[11px] text-left text-xs font-medium transition-colors hover:bg-wash hover:text-primary-strong ${
+            item.isActive
+              ? 'font-semibold text-primary-strong before:absolute before:left-0 before:h-6 before:w-[3px] before:rounded-r-[3px] before:bg-primary'
+              : 'text-body'
+          }`}
+          key={item.key}
+          type="button"
+          aria-current={item.isActive ? 'page' : undefined}
+          onClick={() => onItemClick(item.path)}
+        >
+          <SidebarIcon name={item.icon} />
+          <span className="flex-1">{item.label}</span>
+          {item.badge && (
+            <small
+              className={`grid h-5 min-w-[22px] place-items-center rounded-[10px] px-1.5 text-[9px] font-bold ${
+                item.isActive
+                  ? 'bg-primary-tint text-primary-strong'
+                  : 'bg-chip text-muted'
+              }`}
+            >
+              {item.badge}
+            </small>
+          )}
+        </button>
+      ))}
     </div>
   )
 }
@@ -127,20 +105,41 @@ function SidebarGroup({
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const activeLabel =
-    pathname === '/dashboard'
-      ? 'Inicio'
-      : pathname.startsWith('/dashboard/proposals')
-        ? 'Propuestas'
-        : pathname.startsWith('/dashboard/review')
-          ? 'Revisión'
-          : ''
+  const { can } = usePermissions()
 
-  const handleItemClick = (path?: string) => {
-    if (path) {
-      navigate(path)
+  // Menú generado desde la configuración de rutas, filtrado por capacidades.
+  const groups = useMemo(() => {
+    const byGroup = new Map<NavGroup, SidebarItem[]>()
+
+    for (const route of getNavRoutes(can)) {
+      if (!route.nav) {
+        continue
+      }
+
+      const items = byGroup.get(route.nav.group) ?? []
+
+      items.push({
+        key: route.id,
+        label: route.nav.label,
+        icon: route.nav.icon,
+        badge: route.nav.badge,
+        path: toAbsolutePath(route),
+        isActive: isRouteActive(route, pathname),
+      })
+      byGroup.set(route.nav.group, items)
     }
 
+    return (Object.keys(groupLabels) as NavGroup[])
+      .filter((group) => byGroup.has(group))
+      .map((group) => ({
+        group,
+        label: groupLabels[group],
+        items: byGroup.get(group) ?? [],
+      }))
+  }, [can, pathname])
+
+  const handleItemClick = (path: string) => {
+    navigate(path)
     onClose()
   }
 
@@ -153,18 +152,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       aria-label="Navegación del dashboard"
     >
       <div className="flex flex-col gap-[30px]">
-        <SidebarGroup
-          activeLabel={activeLabel}
-          items={principalItems}
-          label="Principal"
-          onItemClick={handleItemClick}
-        />
-        <SidebarGroup
-          activeLabel={activeLabel}
-          items={administrationItems}
-          label="Administración"
-          onItemClick={handleItemClick}
-        />
+        {groups.map(({ group, label, items }) => (
+          <SidebarGroup
+            items={items}
+            key={group}
+            label={label}
+            onItemClick={handleItemClick}
+          />
+        ))}
       </div>
 
       <div className="absolute bottom-[42px] left-3.5 right-3.5 flex items-center gap-2 rounded-lg border border-line bg-canvas p-3">
