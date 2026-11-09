@@ -11,6 +11,7 @@ import type { User } from '../types/user/User'
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => loadSession())
+  const [hasSignedOut, setHasSignedOut] = useState(false)
 
   // Mantiene sincronizadas las pestañas: cerrar sesión en una cierra en todas.
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       const authenticatedUser = await authenticate(credentials)
 
       saveSession(authenticatedUser, options?.remember ?? false)
+      setHasSignedOut(false)
       setUser(authenticatedUser)
 
       return authenticatedUser
@@ -39,6 +41,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearSession()
+    setHasSignedOut(true)
     setUser(null)
   }, [])
 
@@ -47,10 +50,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       user,
       roles: user ? user.roles.map((role) => role.codigo) : [],
       isAuthenticated: user !== null,
+      hasSignedOut,
       login,
       logout,
     }),
-    [login, logout, user],
+    [hasSignedOut, login, logout, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

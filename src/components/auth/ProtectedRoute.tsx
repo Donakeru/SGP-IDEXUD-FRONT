@@ -12,14 +12,15 @@ import NoAccess from '../../pages/NoAccess'
  * Es solo experiencia de usuario; el backend debe validar cada petición.
  */
 export default function ProtectedRoute() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, hasSignedOut } = useAuth()
   const { hasAccess } = usePermissions()
   const location = useLocation()
 
   if (!isAuthenticated) {
     const from = `${location.pathname}${location.search}${location.hash}`
 
-    return <Navigate to="/login" replace state={{ from }} />
+    // Quien cierra sesión voluntariamente no vuelve a la última pantalla al ingresar.
+    return <Navigate to="/login" replace state={hasSignedOut ? undefined : { from }} />
   }
 
   if (!hasAccess) {

@@ -5,12 +5,10 @@ import {
 import { useEffect, useId, useRef, useState } from 'react'
 import { getInitials, getRoleLabel } from '../auth/userDisplay'
 import { useAuth } from '../auth/useAuth'
-import { useSignOut } from '../auth/useSignOut'
 
 /** Avatar, nombre y rol del usuario de la sesión, con menú para cerrar sesión. */
 export default function UserMenu() {
-  const { user } = useAuth()
-  const signOut = useSignOut()
+  const { user, logout } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
@@ -84,7 +82,7 @@ export default function UserMenu() {
             type="button"
             role="menuitem"
             autoFocus
-            onClick={signOut}
+            onClick={logout}
           >
             <ArrowRightOnRectangleIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
             Cerrar sesión

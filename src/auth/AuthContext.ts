@@ -12,6 +12,11 @@ export type AuthContextValue = {
   /** Códigos de rol del usuario (por ejemplo `administrador`). */
   roles: readonly string[]
   isAuthenticated: boolean
+  /**
+   * `true` si la persona cerró sesión voluntariamente en esta carga de la
+   * página. Evita recordar la última pantalla como "destino original".
+   */
+  hasSignedOut: boolean
   /** Lanza `AuthError` si no se puede iniciar sesión. */
   login: (credentials: Credentials, options?: LoginOptions) => Promise<User>
   logout: () => void
