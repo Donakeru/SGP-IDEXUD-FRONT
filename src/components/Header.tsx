@@ -1,7 +1,5 @@
-import {
-  Bars3Icon,
-  ChevronDownIcon,
-} from '@heroicons/react/24/outline'
+import { Bars3Icon } from '@heroicons/react/24/outline'
+import UserMenu from './UserMenu'
 
 type HeaderProps = {
   isSidebarOpen: boolean
@@ -58,24 +56,7 @@ export default function Header({
           </h1>
         </div>
 
-        <button
-          className="ml-auto flex items-center gap-2.5 border-0 border-l border-line-soft bg-transparent py-1.5 pl-4 text-muted"
-          type="button"
-          aria-label="Abrir menú de Mariana López"
-        >
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">
-            ML
-          </span>
-          <span className="hidden min-w-[142px] flex-col text-left sm:flex">
-            <strong className="text-[13px] leading-[18px] text-ink">
-              Mariana López
-            </strong>
-            <span className="text-[11px] leading-4 text-muted">
-              Coordinación IDEXUD
-            </span>
-          </span>
-          <ChevronDownIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-        </button>
+        <UserMenu />
       </div>
     </header>
   )

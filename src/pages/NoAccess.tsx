@@ -3,11 +3,13 @@ import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
 import { getRoleLabel } from '../auth/userDisplay'
 import { useAuth } from '../auth/useAuth'
+import { useSignOut } from '../auth/useSignOut'
 import logo from '../assets/logo_idexud.png'
 
 /** Pantalla completa para usuarios autenticados sin ningún rol configurado. */
 export default function NoAccess() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
+  const signOut = useSignOut()
   const roleLabel = user ? getRoleLabel(user) : ''
 
   return (
@@ -30,7 +32,7 @@ export default function NoAccess() {
               : 'Tu usuario no tiene roles asignados. Comunícate con el administrador del sistema.'
           }
           action={
-            <Button variant="secondary" onClick={logout}>
+            <Button variant="secondary" onClick={signOut}>
               Cerrar sesión
             </Button>
           }
