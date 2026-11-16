@@ -48,3 +48,6 @@ eslint.config.js.timestamp-*
 
 figma_base.make
 figma_base/*
+
+# Specs de trabajo (requirements, design, tasks) generadas con Kiro
+docs/spec/

@@ -1,7 +1,6 @@
 import {
   CheckIcon,
   ChevronRightIcon,
-  DocumentTextIcon,
   PaperAirplaneIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -9,7 +8,15 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getRoleLabel } from '../../auth/userDisplay'
 import { useAuth } from '../../auth/useAuth'
+import DocumentActions from '../../components/documents/DocumentActions'
 import TextArea from '../../components/forms/TextArea'
+import {
+  formatDocumentType,
+  formatFileSize,
+  getFileIcon,
+  getFileTypeLabel,
+} from '../../utils/file'
+import type { ProposalDocument } from '../../types/proposal/ProposalDocument'
 import type {
   HistoryEvent,
   ReviewProposal,
@@ -207,6 +214,83 @@ function DataRow({ label, value }: { label: string; value: string }) {
       <dt className="text-[9px] text-muted">{label}</dt>
       <dd className="mt-0.5 text-[11px] font-semibold text-ink">{value}</dd>
     </div>
+  )
+}
+
+/**
+ * Documentos adjuntos de una propuesta. Por defecto solo los vigentes; si hay
+ * versiones anteriores aparece el control para mostrarlas. Cada documento
+ * ofrece Descargar y, si es PDF o imagen, Previsualizar. Se monta con `key` por
+ * propuesta, así el control de versiones anteriores se reinicia al cambiar.
+ */
+function DocumentsPanel({ documents }: { documents: ProposalDocument[] }) {
+  const [showPrevious, setShowPrevious] = useState(false)
+  const currentDocuments = documents.filter((doc) => doc.es_vigente)
+  const previousCount = documents.length - currentDocuments.length
+  const visibleDocuments = showPrevious ? documents : currentDocuments
+
+  return (
+    <Panel
+      title="Documentos adjuntos"
+      subtitle={`${visibleDocuments.length} archivo${visibleDocuments.length === 1 ? '' : 's'}`}
+    >
+      {visibleDocuments.length > 0 ? (
+        <ul>
+          {visibleDocuments.map((doc) => {
+            const FileIcon = getFileIcon(doc.tipo_mime)
+            const typeLabel = formatDocumentType(doc.tipo_documento)
+
+            return (
+              <li
+                className="flex items-center gap-2.5 border-b border-line-soft px-4 py-2.5 last:border-0"
+                key={doc.uuid_archivo}
+              >
+                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary-strong">
+                  <FileIcon className="size-[18px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <strong className="truncate text-[11px] text-ink" title={doc.nombre_original}>
+                    {doc.nombre_original}
+                  </strong>
+                  <small className="text-[9px] text-muted">
+                    {getFileTypeLabel(doc.tipo_mime)} · {formatFileSize(doc.tamano_bytes)} · v
+                    {doc.numero_version}
+                    {typeLabel ? ` · ${typeLabel}` : ''}
+                  </small>
+                </span>
+                {!doc.es_vigente && (
+                  <span className="shrink-0 rounded bg-chip px-1.5 py-0.5 text-[9px] font-semibold text-body">
+                    Anterior
+                  </span>
+                )}
+                <DocumentActions doc={doc} />
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p className="px-4 py-6 text-center text-[11px] text-muted">
+          {documents.length > 0
+            ? 'Esta propuesta no tiene documentos vigentes.'
+            : 'Esta propuesta no tiene documentos adjuntos.'}
+        </p>
+      )}
+
+      {previousCount > 0 && (
+        <div className="border-t border-line-soft px-4 py-2">
+          <button
+            className="border-0 bg-transparent p-0 text-[10px] font-semibold text-primary-strong hover:underline"
+            type="button"
+            aria-pressed={showPrevious}
+            onClick={() => setShowPrevious((visible) => !visible)}
+          >
+            {showPrevious
+              ? 'Ocultar versiones anteriores'
+              : `Mostrar versiones anteriores (${previousCount})`}
+          </button>
+        </div>
+      )}
+    </Panel>
   )
 }
 
@@ -746,33 +830,7 @@ export default function Review() {
               </div>
             </Panel>
 
-            <Panel
-              title="Documentos adjuntos"
-              subtitle={`${selected.documents.length} archivo${selected.documents.length === 1 ? '' : 's'}`}
-            >
-              {selected.documents.length > 0 ? (
-                <ul>
-                  {selected.documents.map((document) => (
-                    <li
-                      className="flex items-center gap-2.5 border-b border-line-soft px-4 py-2.5 last:border-0"
-                      key={document.name}
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary-strong">
-                        <DocumentTextIcon className="size-[18px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
-                      </span>
-                      <span className="flex min-w-0 flex-col">
-                        <strong className="truncate text-[11px] text-ink">{document.name}</strong>
-                        <small className="text-[9px] text-muted">{document.size}</small>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="px-4 py-6 text-center text-[11px] text-muted">
-                  Esta propuesta no tiene documentos adjuntos.
-                </p>
-              )}
-            </Panel>
+            <DocumentsPanel key={selected.id} documents={selected.documents} />
 
             <Panel title="Historial" subtitle="Observaciones y decisiones, de la más reciente a la más antigua">
               <ol className="flex flex-col">

@@ -49,9 +49,36 @@ const getJson = async <T>(endpoint: string, signal?: AbortSignal): Promise<T> =>
   return (await response.json()) as T
 }
 
+/**
+ * GET que devuelve el cuerpo como `Blob` (archivos). Lanza `HttpError` si la
+ * respuesta no es 2xx y `NetworkError` si la conexión se corta al leer el cuerpo.
+ *
+ * TODO: cuando exista autenticación por token, agregar aquí el encabezado
+ * `Authorization` (en `request`). Por eso los archivos se piden con `fetch` y
+ * no con un enlace directo.
+ */
+const getBlob = async (endpoint: string, signal?: AbortSignal): Promise<Blob> => {
+  const response = await request(endpoint, { method: 'GET', signal })
+
+  if (!response.ok) {
+    throw new HttpError(response.status)
+  }
+
+  try {
+    return await response.blob()
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw error
+    }
+
+    throw new NetworkError()
+  }
+}
+
 export const httpClient = {
   request,
   getJson,
+  getBlob,
   get: (endpoint: string, signal?: AbortSignal) =>
     request(endpoint, {
       method: 'GET',
