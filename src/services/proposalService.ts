@@ -3,6 +3,8 @@ import type { CreateProposalDto } from '../types/proposal/CreateProposalDto'
 import type { ProposalDocument } from '../types/proposal/ProposalDocument'
 import type { ProposalListResponse } from '../types/proposal/ProposalListResponse'
 import type { ReviewProposal } from '../types/proposal/ReviewProposal'
+import type { UpdateProposalStatusDto } from '../types/proposal/UpdateProposalStatusDto'
+import type { UpdateProposalStatusResponse } from '../types/proposal/UpdateProposalStatusResponse'
 
 
 export function buildCreateProposalFormData(dto: CreateProposalDto) {
@@ -72,9 +74,20 @@ export async function getProposals(
 }
 
 export async function getReviewProposals(
+  roleCode: string,
   signal?: AbortSignal,
 ): Promise<ReviewProposal[]> {
-  const response = await httpClient.get('/proposal/review', signal)
+  const normalizedRoleCode = roleCode.trim()
+
+  if (!normalizedRoleCode) {
+    throw new Error('El código del rol es obligatorio para consultar la revisión.')
+  }
+
+  const searchParams = new URLSearchParams({ rol: normalizedRoleCode })
+  const response = await httpClient.get(
+    `/proposal/review?${searchParams.toString()}`,
+    signal,
+  )
 
   if (!response.ok) {
     throw new Error(`No fue posible consultar la bandeja de revisión (${response.status}).`)
@@ -88,8 +101,25 @@ export async function getReviewProposals(
 
   return (data as ReviewProposal[]).map((proposal) => ({
     ...proposal,
+    status: normalizeReviewStatus(proposal.status),
     documents: normalizeDocuments((proposal as { documents?: unknown }).documents),
   }))
+}
+
+function normalizeReviewStatus(status: unknown): ReviewProposal['status'] {
+  if (status === 'En Revision por Direccion') {
+    return 'En revisión de Dirección'
+  }
+
+  if (status === 'Aceptado') {
+    return 'Aceptada'
+  }
+
+  if (status === 'Rechazado') {
+    return 'Rechazada'
+  }
+
+  return status as ReviewProposal['status']
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -112,13 +142,13 @@ export function normalizeDocument(value: unknown): ProposalDocument | null {
 
   const {
     id_documento,
-    uuid_archivo,
     nombre_original,
     tipo_mime,
     tamano_bytes,
     numero_version,
     es_vigente,
   } = value
+  const uuid_archivo = value.uuid_archivo ?? value.uuidArchivo
 
   if (
     !isFiniteNumber(id_documento) ||
@@ -147,6 +177,8 @@ export function normalizeDocument(value: unknown): ProposalDocument | null {
   }
 }
 
+
+
 /** Convierte `documents` en una lista válida; si no es una lista, queda vacía. */
 function normalizeDocuments(value: unknown): ProposalDocument[] {
   if (!Array.isArray(value)) {
@@ -156,4 +188,28 @@ function normalizeDocuments(value: unknown): ProposalDocument[] {
   return value
     .map(normalizeDocument)
     .filter((document): document is ProposalDocument => document !== null)
+}
+
+export async function updateProposalStatus(
+  uuidExpediente: string,
+  dto: UpdateProposalStatusDto,
+  signal?: AbortSignal,
+): Promise<UpdateProposalStatusResponse> {
+  const normalizedUuid = uuidExpediente.trim()
+
+  if (!normalizedUuid) {
+    throw new Error('El UUID del expediente es obligatorio.')
+  }
+
+  const response = await httpClient.patch(
+    `/proposal/${encodeURIComponent(normalizedUuid)}/status`,
+    JSON.stringify(dto),
+    signal,
+  )
+
+  if (!response.ok) {
+    throw new Error(`No fue posible actualizar el estado (${response.status}).`)
+  }
+
+  return response.json() as Promise<UpdateProposalStatusResponse>
 }

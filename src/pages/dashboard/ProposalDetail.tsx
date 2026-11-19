@@ -1,8 +1,5 @@
 import {
-  ArrowDownTrayIcon,
   ChatBubbleLeftRightIcon,
-  DocumentTextIcon,
-  EyeIcon,
   PaperClipIcon,
 } from '@heroicons/react/24/outline'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -14,39 +11,48 @@ import Can from '../../components/auth/Can'
 import CommentComposer from '../../components/comments/CommentComposer'
 import CommentList from '../../components/comments/CommentList'
 import FileInput from '../../components/forms/FileInput'
+import ProposalDocuments from '../../components/ProposalDocuments'
 import Spinner from '../../components/Spinner'
 import { createComment, getComments } from '../../services/commentService'
 import { isAbortError } from '../../services/http/errors'
 import type { Comment, NewCommentInput } from '../../types/comment/Comment'
+import type { ProposalDocument } from '../../types/proposal/ProposalDocument'
 
-type DetailDocument = {
-  name: string
-  version: string
-  uploader: string
-  date: string
-  size: string
-}
-
-const documents: DetailDocument[] = [
+const documents: ProposalDocument[] = [
   {
+    id_documento: 1,
+    uuid_archivo: '',
+    nombre_original: 'Propuesta técnica y económica.pdf',
+    tipo_mime: 'application/pdf',
+    tamano_bytes: 0,
+    numero_version: 2,
+    es_vigente: true,
+    tipo_documento: 'propuesta',
     name: 'Propuesta técnica y económica.pdf',
-    version: 'v2',
-    uploader: 'Equipo técnico',
-    date: '12 oct 2026',
     size: '3,2 MB',
   },
   {
+    id_documento: 2,
+    uuid_archivo: '',
+    nombre_original: 'Certificado de experiencia.pdf',
+    tipo_mime: 'application/pdf',
+    tamano_bytes: 0,
+    numero_version: 1,
+    es_vigente: true,
+    tipo_documento: 'soporte',
     name: 'Certificado de experiencia.pdf',
-    version: 'v1',
-    uploader: 'Ana Torres',
-    date: '08 oct 2026',
     size: '1,8 MB',
   },
   {
+    id_documento: 3,
+    uuid_archivo: '',
+    nombre_original: 'Presupuesto detallado.xlsx',
+    tipo_mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    tamano_bytes: 0,
+    numero_version: 2,
+    es_vigente: true,
+    tipo_documento: 'presupuesto',
     name: 'Presupuesto detallado.xlsx',
-    version: 'v2',
-    uploader: 'Carlos Ruiz',
-    date: '12 oct 2026',
     size: '640 KB',
   },
 ]
@@ -189,29 +195,14 @@ export default function ProposalDetail() {
           <div className="border-t border-line-soft">
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-[8px] font-semibold uppercase tracking-[0.05em] text-muted">Archivos cargados</span>
-              <span className="grid size-5 place-items-center rounded-full bg-primary-soft text-[8px] font-bold text-primary-strong">3</span>
+              <span className="grid size-5 place-items-center rounded-full bg-primary-soft text-[8px] font-bold text-primary-strong">{documents.length}</span>
             </div>
-            {documents.map((document) => (
-              <button
-                className={`flex w-full items-center gap-2 border-l-2 px-3 py-2 text-left transition-colors ${
-                  selectedDocument === document.name
-                    ? 'border-primary bg-primary-soft/60'
-                    : 'border-transparent hover:bg-canvas'
-                }`}
-                key={document.name}
-                type="button"
-                onClick={() => setSelectedDocument(document.name)}
-              >
-                <DocumentTextIcon className="size-4 shrink-0 text-primary-strong" strokeWidth={1.8} aria-hidden="true" />
-                <span className="min-w-0 flex-1">
-                  <strong className="block truncate text-[8px] font-semibold text-ink">{document.name}</strong>
-                  <small className="block truncate text-[7px] text-muted">{document.uploader} · {document.size}</small>
-                </span>
-                <span className="rounded bg-chip px-1 py-0.5 text-[7px] font-semibold text-body">{document.version}</span>
-                <EyeIcon className="size-3.5 shrink-0 text-muted" strokeWidth={1.8} aria-hidden="true" />
-                <ArrowDownTrayIcon className="size-3.5 shrink-0 text-muted" strokeWidth={1.8} aria-hidden="true" />
-              </button>
-            ))}
+            <ProposalDocuments
+              documents={documents}
+              showVersion
+              selectedDocumentName={selectedDocument}
+              onSelect={(document:ProposalDocument) => setSelectedDocument(document.name)}
+            />
           </div>
 
           <div className="border-t border-line-soft p-3">

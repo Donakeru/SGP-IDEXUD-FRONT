@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom'
 import { getRoleLabel } from '../../auth/userDisplay'
 import { useAuth } from '../../auth/useAuth'
 import DocumentActions from '../../components/documents/DocumentActions'
+import Alert from '../../components/Alert'
+import Modal from '../../components/Modal'
 import TextArea from '../../components/forms/TextArea'
 import {
   formatDocumentType,
@@ -18,11 +20,10 @@ import {
 } from '../../utils/file'
 import type { ProposalDocument } from '../../types/proposal/ProposalDocument'
 import type {
-  HistoryEvent,
   ReviewProposal,
   ReviewStatus,
 } from '../../types/proposal/ReviewProposal'
-import { getReviewProposals } from '../../services/proposalService'
+import { getReviewProposals, updateProposalStatus } from '../../services/proposalService'
 
 /**
  * Bandeja de revisión: lista de propuestas, datos, documentos e historial, con
@@ -32,18 +33,7 @@ import { getReviewProposals } from '../../services/proposalService'
  * Se ve con la capacidad `ver_revision` (ver router/routeConfig.ts).
  */
 
-/**
- * Interruptor de las decisiones de revisión (Remitir, Desestimar, Aprobar,
- * Desaprobar). Con `false` los botones siguen visibles pero no hacen nada: no
- * llaman al backend, no cambian el estado y no muestran mensajes.
- *
- * TODO: conectar estas acciones cuando existan los endpoints y la capacidad
- * `decidir_propuesta` esté asignada a los roles (ver auth/permissions.ts):
- *   - Remitir / Desestimar → asistente de dirección.
- *   - Aprobar / Desaprobar → dirección.
- * El código de los diálogos y de los cambios de estado se conserva a propósito.
- */
-const DECISION_ACTIONS_ENABLED: boolean = false
+const DECISION_ACTIONS_ENABLED = true
 
 type ReviewAction = 'forward' | 'dismiss' | 'approve' | 'disapprove'
 type QueueFilter = 'all' | 'entry' | 'direction' | 'resolved'
@@ -53,6 +43,7 @@ type ActionConfig = {
   title: string
   description: string
   confirmLabel: string
+  targetStatus?: 'En Revision por Direccion' | 'Aceptado' | 'Rechazado'
   nextStatus: ReviewStatus
   tone: 'primary' | 'danger'
   requiresReason: boolean
@@ -67,6 +58,7 @@ const actionConfig: Record<ReviewAction, ActionConfig> = {
     description:
       'La propuesta pasará a “En revisión de Dirección” y Dirección será notificada.',
     confirmLabel: 'Sí, remitir',
+    targetStatus: 'En Revision por Direccion',
     nextStatus: 'En revisión de Dirección',
     tone: 'primary',
     requiresReason: false,
@@ -74,11 +66,12 @@ const actionConfig: Record<ReviewAction, ActionConfig> = {
     successMessage: 'Propuesta remitida a Dirección.',
   },
   dismiss: {
-    label: 'Desestimar',
+    label: 'Desestimar Propuesta',
     title: '¿Desestimar propuesta?',
     description:
       'La propuesta quedará “Rechazada” y se informará a Dirección y a la entidad por correo institucional.',
     confirmLabel: 'Desestimar propuesta',
+    targetStatus: 'Rechazado',
     nextStatus: 'Rechazada',
     tone: 'danger',
     requiresReason: true,
@@ -86,11 +79,12 @@ const actionConfig: Record<ReviewAction, ActionConfig> = {
     successMessage: 'Propuesta desestimada. Se notificará a la entidad.',
   },
   approve: {
-    label: 'Continuar con el proceso',
+    label: 'Aceptar Propuesta Inicial',
     title: '¿Aprobar la propuesta inicial?',
     description:
       'La propuesta pasará a “Aceptada”, se creará el expediente digital y se notificará a Licitaciones y al equipo.',
     confirmLabel: 'Sí, continuar',
+    targetStatus: 'Aceptado',
     nextStatus: 'Aceptada',
     tone: 'primary',
     requiresReason: false,
@@ -111,9 +105,17 @@ const actionConfig: Record<ReviewAction, ActionConfig> = {
   },
 }
 
-const actionsByStatus: Partial<Record<ReviewStatus, ReviewAction[]>> = {
-  Registrado: ['forward', 'dismiss'],
-  'En revisión de Dirección': ['approve', 'disapprove'],
+const actionsByRoleAndStatus: Record<
+  string,
+  Partial<Record<ReviewStatus, ReviewAction[]>>
+> = {
+  asistente_direccion: {
+    Registrado: ['forward'],
+  },
+  direccion: {
+    Registrado: ['dismiss', 'approve'],
+    'En revisión de Dirección': ['dismiss', 'approve'],
+  },
 }
 
 const stageByStatus: Record<ReviewStatus, Exclude<QueueFilter, 'all'>> = {
@@ -136,22 +138,28 @@ const statusStyles: Record<ReviewStatus, string> = {
   Rechazada: 'bg-danger-soft text-danger',
 }
 
+function normalizeReviewStatus(status: string): ReviewStatus {
+  if (status === 'En Revision por Direccion') {
+    return 'En revisión de Dirección'
+  }
+
+  if (status === 'Aceptado') {
+    return 'Aceptada'
+  }
+
+  if (status === 'Rechazado') {
+    return 'Rechazada'
+  }
+
+  return status as ReviewStatus
+}
+
 const filterOptions: { value: QueueFilter; label: string }[] = [
   { value: 'all', label: 'Todas' },
   { value: 'entry', label: 'Entrada' },
   { value: 'direction', label: 'Dirección' },
   { value: 'resolved', label: 'Resueltas' },
 ]
-
-function formatNow() {
-  return new Date().toLocaleString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 function getForwardRequirements(proposal: ReviewProposal) {
   const requirements = [
@@ -297,119 +305,80 @@ function DocumentsPanel({ documents }: { documents: ProposalDocument[] }) {
 function ActionDialog({
   config,
   proposal,
-  reason,
-  showReasonError,
-  onReasonChange,
+  statusError,
+  isSubmitting,
   onCancel,
   onConfirm,
 }: {
   config: ActionConfig
   proposal: ReviewProposal
-  reason: string
-  showReasonError: boolean
-  onReasonChange: (value: string) => void
+  statusError: string | null
+  isSubmitting: boolean
   onCancel: () => void
   onConfirm: () => void
 }) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onCancel()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onCancel])
-
   const isDanger = config.tone === 'danger'
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-ink/50 p-5"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="review-dialog-title"
-    >
-      <div className="w-full max-w-[440px] rounded-lg bg-white p-6 shadow-[0_18px_48px_rgba(38,38,38,0.22)]">
-        <span
-          className={`mb-3.5 grid size-[46px] place-items-center rounded-full ${
-            isDanger ? 'bg-danger-soft text-danger' : 'bg-primary-soft text-primary-strong'
-          }`}
-        >
-          {isDanger ? <XMarkIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" /> : <CheckIcon className="size-5" strokeWidth={1.8} aria-hidden="true" />}
-        </span>
-        <h2
-          id="review-dialog-title"
-          className="text-[17px] font-semibold leading-6 text-ink"
-        >
-          {config.title}
-        </h2>
-        <p className="mt-1 text-[11px] font-semibold text-muted">
-          {proposal.id} · {proposal.title}
-        </p>
-        <p className="mt-2 text-[11px] leading-4 text-body">{config.description}</p>
-
-        {config.requiresReason && (
-          <label className="mt-4 flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold text-ink">
-              Motivo <strong className="text-danger">*</strong>
-            </span>
-            <TextArea
-              autoFocus
-              className="!text-[11px]"
-              error={showReasonError ? 'El motivo es obligatorio.' : undefined}
-              value={reason}
-              onChange={(event) => onReasonChange(event.target.value)}
-              placeholder="Explica por qué se toma esta decisión. Se enviará a la entidad."
-            />
-            {showReasonError && (
-              <small className="text-[10px] text-danger">
-                El motivo es obligatorio para continuar.
-              </small>
-            )}
-          </label>
-        )}
-
-        <div className="mt-5 flex justify-end gap-2">
+    <Modal
+      open
+      title={config.title}
+      description={`${proposal.id} · ${proposal.title}. ${config.description}`}
+      icon={
+        isDanger ? (
+          <XMarkIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />
+        ) : (
+          <CheckIcon className="size-5" strokeWidth={1.8} aria-hidden="true" />
+        )
+      }
+      onClose={isSubmitting ? undefined : onCancel}
+      footer={
+        <>
           <button
-            className="h-[38px] rounded-md border border-line bg-white px-3.5 text-[11px] font-semibold text-body hover:bg-primary-soft"
+            className="h-[38px] rounded-md border border-line bg-white px-3.5 text-[11px] font-semibold text-body hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
+            disabled={isSubmitting}
             onClick={onCancel}
           >
             Cancelar
           </button>
           <button
-            className={`h-[38px] rounded-md px-3.5 text-[11px] font-semibold text-white ${
+            className={`h-[38px] rounded-md px-3.5 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
               isDanger ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary-hover'
             }`}
             type="button"
+            disabled={isSubmitting}
             onClick={onConfirm}
           >
-            {config.confirmLabel}
+            {isSubmitting ? 'Actualizando…' : config.confirmLabel}
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      {statusError && (
+        <p className="mt-3 rounded-md border border-danger-line bg-danger-subtle px-3 py-2 text-left text-[9px] leading-4 text-danger" role="alert">
+          {statusError}
+        </p>
+      )}
+    </Modal>
   )
 }
 
 function ReviewActionsPanel({
   proposal,
+  roleCode,
   observation,
   onObservationChange,
-  onSaveObservation,
   onAction,
 }: {
   proposal: ReviewProposal
+  roleCode: string
   observation: string
   onObservationChange: (value: string) => void
-  onSaveObservation: () => void
   onAction: (action: ReviewAction) => void
 }) {
   const stage = stageByStatus[proposal.status]
-  const actions = actionsByStatus[proposal.status]
+  const actions = actionsByRoleAndStatus[roleCode]?.[proposal.status]
   const requirements =
     proposal.status === 'Registrado' ? getForwardRequirements(proposal) : []
   const missingRequirements = requirements.filter((item) => !item.met)
@@ -434,27 +403,15 @@ function ReviewActionsPanel({
       <div className="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-semibold text-ink" htmlFor="review-observation">
-            Observaciones <em className="font-normal not-italic text-muted">Opcional</em>
+            Motivo del cambio de estado <strong className="text-danger">*</strong>
           </label>
           <TextArea
             id="review-observation"
             className="!min-h-[84px] !text-[11px]"
             value={observation}
             onChange={(event) => onObservationChange(event.target.value)}
-            placeholder={
-              proposal.status === 'Registrado'
-                ? 'Anota lo revisado en los datos y documentos.'
-                : 'Agrega observaciones sobre lo registrado en la revisión de entrada.'
-            }
+              placeholder="Escribe el motivo que se enviará al backend para el cambio de estado."
           />
-          <button
-            className="h-[34px] self-start rounded-md border border-line bg-white px-3 text-[10px] font-semibold text-body hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
-            type="button"
-            disabled={!observation.trim()}
-            onClick={onSaveObservation}
-          >
-            Guardar observación
-          </button>
         </div>
 
         {requirements.length > 0 && (
@@ -482,7 +439,8 @@ function ReviewActionsPanel({
           {actions.map((action) => {
             const config = actionConfig[action]
             const isDanger = config.tone === 'danger'
-            const isBlocked = action === 'forward' && !canForward
+            const isBlocked =
+              (action === 'forward' && !canForward) || !observation.trim()
 
             return (
               <button
@@ -516,16 +474,19 @@ function ReviewActionsPanel({
 export default function Review() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const authorName = user?.nombre ?? 'Usuario'
   const profileLabel = user ? getRoleLabel(user) : ''
+  const roleCode =
+    user?.roles.find(
+      (role) => role.codigo === 'direccion' || role.codigo === 'asistente_direccion',
+    )?.codigo ?? user?.roles[0]?.codigo ?? ''
   const [proposals, setProposals] = useState<ReviewProposal[]>([])
   const [filter, setFilter] = useState<QueueFilter>('all')
   const [selectedId, setSelectedId] = useState('')
   const [observation, setObservation] = useState('')
   const [dialogAction, setDialogAction] = useState<ReviewAction | null>(null)
-  const [reason, setReason] = useState('')
-  const [showReasonError, setShowReasonError] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [statusError, setStatusError] = useState<string | null>(null)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -533,11 +494,19 @@ export default function Review() {
     const controller = new AbortController()
 
     const loadReviewProposals = async () => {
+      if (!roleCode) {
+        setProposals([])
+        setSelectedId('')
+        setLoadError('El usuario no tiene un rol configurado para consultar la revisión.')
+        setIsLoading(false)
+        return
+      }
+
       setIsLoading(true)
       setLoadError(null)
 
       try {
-        const reviewProposals = await getReviewProposals(controller.signal)
+        const reviewProposals = await getReviewProposals(roleCode, controller.signal)
 
         if (controller.signal.aborted) {
           return
@@ -565,17 +534,17 @@ export default function Review() {
     void loadReviewProposals()
 
     return () => controller.abort()
-  }, [])
+  }, [roleCode])
 
   useEffect(() => {
-    if (!toast) {
+    if (!statusMessage) {
       return
     }
 
-    const timeoutId = window.setTimeout(() => setToast(null), 4000)
+    const timeoutId = window.setTimeout(() => setStatusMessage(null), 4000)
 
     return () => window.clearTimeout(timeoutId)
-  }, [toast])
+  }, [statusMessage])
 
   const counts = useMemo(
     () => ({
@@ -600,53 +569,9 @@ export default function Review() {
   const selected = proposals.find((item) => item.id === selectedId) ?? proposals[0]
   const activeConfig = dialogAction ? actionConfig[dialogAction] : null
 
-  const appendEvent = (
-    proposalId: string,
-    event: Omit<HistoryEvent, 'id' | 'author' | 'date'>,
-    nextStatus?: ReviewStatus,
-  ) => {
-    const now = formatNow()
-
-    setProposals((current) =>
-      current.map((item) =>
-        item.id === proposalId
-          ? {
-              ...item,
-              status: nextStatus ?? item.status,
-              history: [
-                ...item.history,
-                {
-                  ...event,
-                  id: `${proposalId}-${Date.now()}`,
-                  author: authorName,
-                  date: now,
-                },
-              ],
-            }
-          : item,
-      ),
-    )
-  }
-
   const selectProposal = (id: string) => {
     setSelectedId(id)
     setObservation('')
-  }
-
-  const saveObservation = () => {
-    if (!selected) {
-      return
-    }
-
-    const text = observation.trim()
-
-    if (!text) {
-      return
-    }
-
-    appendEvent(selected.id, { kind: 'observation', text })
-    setObservation('')
-    setToast('Observación guardada en el historial.')
   }
 
   const openAction = (action: ReviewAction) => {
@@ -654,38 +579,62 @@ export default function Review() {
       return
     }
 
-    setReason('')
-    setShowReasonError(false)
+    setStatusError(null)
     setDialogAction(action)
   }
 
   const closeDialog = () => setDialogAction(null)
 
-  const confirmAction = () => {
-    if (!DECISION_ACTIONS_ENABLED || !selected || !dialogAction || !activeConfig) {
+  const confirmAction = async () => {
+    if (
+      !DECISION_ACTIONS_ENABLED ||
+      !selected ||
+      !dialogAction ||
+      !activeConfig ||
+      !activeConfig.targetStatus
+    ) {
       return
     }
 
-    const trimmedReason = reason.trim()
+    const motivo = observation.trim()
 
-    if (activeConfig.requiresReason && !trimmedReason) {
-      setShowReasonError(true)
+    if (!motivo) {
       return
     }
 
-    appendEvent(
-      selected.id,
-      {
-        kind: 'decision',
-        text: trimmedReason
-          ? `${activeConfig.historyText} Motivo: ${trimmedReason}`
-          : activeConfig.historyText,
-      },
-      activeConfig.nextStatus,
-    )
-    setDialogAction(null)
-    setObservation('')
-    setToast(activeConfig.successMessage)
+    if (!user?.id_usuario) {
+      setStatusError('No se encontró el usuario responsable de la acción.')
+      return
+    }
+
+    setIsUpdatingStatus(true)
+    setStatusError(null)
+
+    try {
+      const response = await updateProposalStatus(selected.uuidExpediente, {
+        estadoDestino: activeConfig.targetStatus,
+        idUsuario: user.id_usuario,
+        motivo,
+      })
+      const nextStatus = normalizeReviewStatus(response.estadoNuevo)
+
+      setProposals((current) =>
+        current.map((item) =>
+          item.id === selected.id ? { ...item, status: nextStatus } : item,
+        ),
+      )
+      setDialogAction(null)
+      setObservation('')
+      setStatusMessage(response.mensaje)
+    } catch (error) {
+      setStatusError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible actualizar el estado de la propuesta.',
+      )
+    } finally {
+      setIsUpdatingStatus(false)
+    }
   }
 
   if (!selected) {
@@ -865,9 +814,9 @@ export default function Review() {
           <div className="xl:sticky xl:top-4">
             <ReviewActionsPanel
               proposal={selected}
+              roleCode={roleCode}
               observation={observation}
               onObservationChange={setObservation}
-              onSaveObservation={saveObservation}
               onAction={openAction}
             />
           </div>
@@ -878,28 +827,20 @@ export default function Review() {
         <ActionDialog
           config={activeConfig}
           proposal={selected}
-          reason={reason}
-          showReasonError={showReasonError}
-          onReasonChange={(value) => {
-            setReason(value)
-            setShowReasonError(false)
-          }}
+          statusError={statusError}
+          isSubmitting={isUpdatingStatus}
           onCancel={closeDialog}
           onConfirm={confirmAction}
         />
       )}
 
-      {toast && (
-        <div
-          className="fixed bottom-5 right-5 z-40 flex w-[min(390px,calc(100vw-40px))] items-center gap-2.5 rounded-lg border border-success-line bg-white p-3 shadow-[0_12px_32px_rgba(38,38,38,0.16)]"
-          role="status"
-        >
-          <span className="grid size-[34px] shrink-0 place-items-center rounded-full bg-success-soft text-success">
-            <CheckIcon className="size-[19px]" strokeWidth={1.8} aria-hidden="true" />
-          </span>
-          <strong className="text-[11px] font-semibold text-success">{toast}</strong>
-        </div>
-      )}
+      <Alert
+        open={Boolean(statusMessage)}
+        variant="success"
+        title="Estado actualizado"
+        description={statusMessage ?? undefined}
+        icon={<CheckIcon className="size-[19px]" strokeWidth={1.8} aria-hidden="true" />}
+      />
     </div>
   )
 }

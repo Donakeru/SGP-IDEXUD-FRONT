@@ -20,6 +20,7 @@ export type HistoryEvent = {
 
 export type ReviewProposal = {
   id: string
+  uuidExpediente: string
   title: string
   entity: string
   applicantType: 'Entidad externa' | 'Facultad' | 'Instituto' | 'Rectoría'

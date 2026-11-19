@@ -1,4 +1,5 @@
 import { Bars3Icon } from '@heroicons/react/24/outline'
+import logo from '../assets/logo_idexud.png'
 import UserMenu from './UserMenu'
 
 type HeaderProps = {
@@ -9,20 +10,15 @@ type HeaderProps = {
 function Brand() {
   return (
     <div
-      className="flex w-auto shrink-0 items-center gap-3 lg:w-[276px]"
+      className="flex w-auto shrink-0 items-center lg:w-[276px]"
       aria-label="IDEXUD Universidad Distrital"
     >
-      <div className="grid size-10 place-items-center rounded-lg bg-primary text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]">
-        <span className="text-[13px] font-bold tracking-[-0.4px]">ID</span>
-      </div>
-      <div className="flex flex-col gap-px">
-        <strong className="text-[15px] leading-[18px] tracking-[0.04em] text-primary-strong">
-          SGP - IDEXUD
-        </strong>
-        <span className="text-[10px] uppercase leading-[14px] tracking-[0.04em] text-muted">
-          Universidad Distrital
-        </span>
-      </div>
+      <img
+        src={logo}
+        alt="IDEXUD Universidad Distrital"
+        className="h-10 w-auto max-w-[190px] object-contain"
+        decoding="async"
+      />
     </div>
   )
 }

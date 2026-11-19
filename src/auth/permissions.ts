@@ -11,12 +11,11 @@ import type { Capability } from '../types/auth/Capability'
  * - Los guards del front son solo experiencia de usuario: el backend valida de verdad.
  */
 export const ROLE_CAPABILITIES = {
-  administrador: ['ver_propuestas', 'ver_revision', 'comentar'],
+  administrador: ['ver_propuestas', 'comentar'],
   direccion: ['ver_propuestas', 'ver_revision', 'comentar'],
   asistente_direccion: ['ver_propuestas', 'ver_revision', 'comentar'],
   equipo_multidisciplinar: [
     'ver_propuestas',
-    'ver_revision',
     'comentar',
     'cargar_propuesta',
   ],
