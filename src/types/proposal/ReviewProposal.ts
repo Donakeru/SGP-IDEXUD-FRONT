@@ -1,9 +1,8 @@
 import type { ProposalDocument } from './ProposalDocument'
 
 // TODO: alinear este tipo con `ProposalReviewItem` del OpenAPI. El backend puede
-// enviar `null` en entity, applicantType, contactName, contactEmail y
-// description; `status` e `history[].kind` llegan como string; y `nit` no existe
-// en el backend. Se dejó igual a propósito (cambiarlo afecta a otras pantallas).
+// enviar `null` en los datos de la propuesta; algunos campos ampliados son
+// opcionales porque no todas las respuestas los incluyen.
 export type ReviewStatus =
   | 'Registrado'
   | 'En revisión de Dirección'
@@ -11,9 +10,8 @@ export type ReviewStatus =
   | 'Rechazada'
 
 export type HistoryEvent = {
-  id: string
-  kind: 'observation' | 'decision'
   text: string
+  subject: string
   author: string
   date: string
 }
@@ -27,8 +25,12 @@ export type ReviewProposal = {
   nit?: string
   contactName: string
   contactEmail: string
+  role?: string | null
+  phone?: string | null
   proposalType: string | null
   description: string
+  justification?: string | null
+  startDate?: string | null
   submittedAt: string
   status: ReviewStatus
   dataComplete: boolean

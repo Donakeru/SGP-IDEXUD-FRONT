@@ -411,8 +411,8 @@ export default function NewProposal() {
             <div className="md:col-span-2">
               <FileInput
                 onFilesChange={setProposalFiles}
-                acceptedFormatsLabel="PDF, DOCX o XLSX"
-                maxSizeMb={20}
+                acceptedFormatsLabel="PDF o imágenes"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
                 multiple
               />
               {proposalFiles.length > 0 && (

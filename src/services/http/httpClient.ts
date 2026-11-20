@@ -90,6 +90,13 @@ export const httpClient = {
       body,
       signal,
     }),
+  postJson: (endpoint: string, body: unknown, signal?: AbortSignal) =>
+    request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+    }),
   patch: (endpoint: string, body?: BodyInit, signal?: AbortSignal) =>
     request(endpoint, {
       method: 'PATCH',

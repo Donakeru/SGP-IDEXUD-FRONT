@@ -2,6 +2,7 @@ import { httpClient } from './http/httpClient'
 import type { CreateProposalDto } from '../types/proposal/CreateProposalDto'
 import type { ProposalDocument } from '../types/proposal/ProposalDocument'
 import type { ProposalListResponse } from '../types/proposal/ProposalListResponse'
+import type { ProposalDetailComment, ProposalDetailResponse } from '../types/proposal/ProposalDetail'
 import type { ReviewProposal } from '../types/proposal/ReviewProposal'
 import type { UpdateProposalStatusDto } from '../types/proposal/UpdateProposalStatusDto'
 import type { UpdateProposalStatusResponse } from '../types/proposal/UpdateProposalStatusResponse'
@@ -50,6 +51,42 @@ export async function createProposal(
   }
 
   return response
+}
+
+export type ProposalDocumentType = 'propuesta' | 'facultad'
+
+export async function uploadProposalDocument(
+  uuidExpediente: string,
+  file: File,
+  idUsuario: number,
+  tipoDocumento: ProposalDocumentType = 'propuesta',
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const uuid = uuidExpediente.trim()
+
+  if (!uuid || !file || typeof file.name !== 'string') {
+    throw new Error('El UUID y el archivo son obligatorios.')
+  }
+
+  if (!Number.isFinite(idUsuario)) {
+    throw new Error('El usuario es obligatorio para adjuntar documentos.')
+  }
+
+  const formData = new FormData()
+  formData.append('file', file, file.name)
+  formData.append('idUsuario', String(idUsuario))
+  formData.append('tipoDocumento', tipoDocumento)
+
+  const response = await httpClient.post(
+    `/proposal/${encodeURIComponent(uuid)}/documents`,
+    formData,
+    signal,
+  )
+
+  return parseApiResponse<unknown>(
+    response,
+    'No fue posible adjuntar el documento',
+  )
 }
 
 export async function getProposals(
@@ -212,4 +249,140 @@ export async function updateProposalStatus(
   }
 
   return response.json() as Promise<UpdateProposalStatusResponse>
+}
+
+async function parseApiResponse<T>(response: Response, fallback: string): Promise<T> {
+  const raw = await response.text()
+  let body: unknown
+
+  try {
+    body = raw ? JSON.parse(raw) : undefined
+  } catch {
+    body = undefined
+  }
+
+  if (!response.ok) {
+    const detail = isRecord(body) && typeof body.detail === 'string' ? body.detail : undefined
+    throw new Error(detail ?? `${fallback} (${response.status}).`)
+  }
+
+  return body as T
+}
+
+function normalizeDetailComment(value: unknown): ProposalDetailComment | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  if (
+    typeof value.id !== 'number' ||
+    typeof value.content !== 'string' ||
+    typeof value.author !== 'string' ||
+    typeof value.createdAt !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    id: value.id,
+    content: value.content,
+    author: value.author,
+    createdAt: value.createdAt,
+  }
+}
+
+function normalizeDetailComments(value: unknown) {
+  if (!isRecord(value) || !Array.isArray(value.items)) {
+    return { items: [], total: 0, next_cursor: null }
+  }
+
+  return {
+    items: value.items
+      .map(normalizeDetailComment)
+      .filter((comment): comment is ProposalDetailComment => comment !== null),
+    total: typeof value.total === 'number' ? value.total : 0,
+    next_cursor: typeof value.next_cursor === 'string' ? value.next_cursor : null,
+  }
+}
+
+export async function getProposalDetail(
+  uuidExpediente: string,
+  signal?: AbortSignal,
+): Promise<ProposalDetailResponse> {
+  const uuid = uuidExpediente.trim()
+
+  if (!uuid) {
+    throw new Error('El UUID del expediente es obligatorio.')
+  }
+
+  const response = await httpClient.get(
+    `/proposal/${encodeURIComponent(uuid)}/detail`,
+    signal,
+  )
+  const data = await parseApiResponse<Record<string, unknown>>(
+    response,
+    'No fue posible consultar el detalle de la propuesta',
+  )
+
+  return {
+    ...data,
+    documents: normalizeDocuments(data.documents),
+    history: Array.isArray(data.history) ? data.history as ProposalDetailResponse['history'] : [],
+    comments: normalizeDetailComments(data.comments),
+  } as ProposalDetailResponse
+}
+
+export async function getProposalComments(
+  uuidExpediente: string,
+  cursor?: string | null,
+  signal?: AbortSignal,
+) {
+  const uuid = uuidExpediente.trim()
+
+  if (!uuid) {
+    throw new Error('El UUID del expediente es obligatorio.')
+  }
+
+  const searchParams = cursor ? `?${new URLSearchParams({ cursor }).toString()}` : ''
+  const response = await httpClient.get(
+    `/proposal/${encodeURIComponent(uuid)}/comments${searchParams}`,
+    signal,
+  )
+  const data = await parseApiResponse<unknown>(
+    response,
+    'No fue posible cargar más comentarios',
+  )
+
+  return normalizeDetailComments(data)
+}
+
+export async function createProposalComment(
+  uuidExpediente: string,
+  content: string,
+  idUsuario: number,
+  signal?: AbortSignal,
+): Promise<ProposalDetailComment> {
+  const uuid = uuidExpediente.trim()
+  const text = content.trim()
+
+  if (!uuid || !text) {
+    throw new Error('El UUID del expediente y el comentario son obligatorios.')
+  }
+
+  const response = await httpClient.postJson(
+    `/proposal/${encodeURIComponent(uuid)}/comments`,
+    { content: text, idUsuario },
+    signal,
+  )
+  const data = await parseApiResponse<unknown>(
+    response,
+    'No fue posible publicar el comentario',
+  )
+  const comment = normalizeDetailComment(data)
+
+  if (!comment) {
+    throw new Error('La respuesta del comentario no tiene el formato esperado.')
+  }
+
+  return comment
 }

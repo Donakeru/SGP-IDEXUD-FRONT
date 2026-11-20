@@ -28,7 +28,7 @@ export default function Header({
   onMenuClick,
 }: HeaderProps) {
   return (
-    <header className="relative z-30 h-[72px] shrink-0 border-b border-line bg-white">
+    <header className="fixed inset-x-0 top-0 z-30 h-[72px] border-b border-line bg-white">
       <div className="flex h-full items-center px-4 sm:px-6 lg:px-12">
         <button
           className="mr-3 grid size-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-primary-strong transition-colors hover:bg-wash md:hidden"

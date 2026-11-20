@@ -23,15 +23,15 @@ export default function DashboardLayout() {
   }, [isSidebarOpen])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <Header
         isSidebarOpen={isSidebarOpen}
         onMenuClick={() => setIsSidebarOpen((isOpen) => !isOpen)}
       />
-      <div className="relative flex flex-1">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden pt-[72px]">
         {isSidebarOpen && (
           <button
-            className="fixed inset-0 z-40 bg-ink/40 md:hidden"
+            className="fixed inset-x-0 bottom-0 top-[72px] z-40 bg-ink/40 md:hidden"
             type="button"
             aria-label="Cerrar menú de navegación"
             onClick={() => setIsSidebarOpen(false)}
@@ -41,7 +41,7 @@ export default function DashboardLayout() {
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
         />
-        <main className="min-w-0 flex-1">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto md:ml-56">
           <Outlet />
         </main>
       </div>

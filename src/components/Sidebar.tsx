@@ -146,7 +146,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside
       id="dashboard-sidebar"
-      className={`fixed left-0 top-[72px] z-50 flex h-[calc(100vh-72px)] w-56 shrink-0 flex-col border-r border-line bg-white px-3.5 pb-[110px] pt-[22px] transition-transform duration-200 ease-out md:relative md:top-auto md:z-auto md:h-auto md:min-h-[calc(100vh-72px)] md:translate-x-0 ${
+      className={`fixed left-0 top-[72px] z-50 flex h-[calc(100vh-72px)] w-56 shrink-0 flex-col border-r border-line bg-white px-3.5 pb-[110px] pt-[22px] transition-transform duration-200 ease-out md:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Navegación del dashboard"

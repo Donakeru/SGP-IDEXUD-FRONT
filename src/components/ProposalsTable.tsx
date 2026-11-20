@@ -212,7 +212,7 @@ export default function ProposalsTable({
               role="button"
               tabIndex={0}
               aria-label={`Abrir detalle de ${proposal.nombre}`}
-              onClick={() => navigate(`/dashboard/proposals/detail?id=${proposal.id_propuesta}`)}
+              onClick={() => navigate(`/dashboard/proposals/detail?uuid=${encodeURIComponent(proposal.uuid_expediente)}`)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()

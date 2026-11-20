@@ -11,6 +11,7 @@ type ModalProps = {
   closeOnOverlayClick?: boolean
   closeOnEscape?: boolean
   className?: string
+  size?: 'default' | 'wide'
 }
 
 export default function Modal({
@@ -24,6 +25,7 @@ export default function Modal({
   closeOnOverlayClick = false,
   closeOnEscape = true,
   className = '',
+  size = 'default',
 }: ModalProps) {
   const titleId = useId()
 
@@ -62,7 +64,7 @@ export default function Modal({
       onMouseDown={handleOverlayMouseDown}
     >
       <div
-        className={`w-full max-w-[420px] rounded-lg bg-white p-6 text-center shadow-[0_18px_48px_rgba(38,38,38,0.22)] ${className}`}
+        className={`${size === 'wide' ? 'max-w-5xl' : 'max-w-[420px]'} w-full rounded-lg bg-white p-6 text-center shadow-[0_18px_48px_rgba(38,38,38,0.22)] ${className}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         {icon && (

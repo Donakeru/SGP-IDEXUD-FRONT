@@ -1,9 +1,7 @@
-import {
-  ArrowUpTrayIcon,
-  DocumentTextIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline'
+import { ArrowUpTrayIcon, DocumentTextIcon, EyeIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useRef, useState } from 'react'
+import { isPreviewable } from '../../utils/file'
+import FilePreviewModal from '../documents/FilePreviewModal'
 
 type FileItemStatus = 'ready' | 'error'
 
@@ -25,8 +23,12 @@ export type FileInputProps = {
   uploadProgress?: number
 }
 
-const DEFAULT_ACCEPT = '.pdf,.docx,.xlsx'
-const DEFAULT_FORMATS_LABEL = 'PDF, DOCX o XLSX'
+const DEFAULT_ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.gif'
+const DEFAULT_FORMATS_LABEL = 'PDF o imágenes'
+const configuredMaxSizeMb = Number.parseFloat(import.meta.env.VITE_MAX_FILE_SIZE_MB ?? '')
+const DEFAULT_MAX_SIZE_MB = Number.isFinite(configuredMaxSizeMb)
+  ? Math.min(10, Math.max(1, configuredMaxSizeMb))
+  : 10
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) {
@@ -74,7 +76,7 @@ export default function FileInput({
   accept = DEFAULT_ACCEPT,
   acceptedFormatsLabel = DEFAULT_FORMATS_LABEL,
   isUploading = false,
-  maxSizeMb = 20,
+  maxSizeMb = DEFAULT_MAX_SIZE_MB,
   multiple = true,
   onFilesChange,
   onUploadError,
@@ -83,6 +85,7 @@ export default function FileInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [items, setItems] = useState<FileItem[]>([])
+  const [previewFile, setPreviewFile] = useState<File | null>(null)
 
   const notifyFilesChange = (nextItems: FileItem[]) => {
     onFilesChange?.(
@@ -138,6 +141,12 @@ export default function FileInput({
 
   const removeFile = (id: string) => {
     const nextItems = items.filter((item) => item.id !== id)
+    const removedItem = items.find((item) => item.id === id)
+
+    if (removedItem?.file === previewFile) {
+      setPreviewFile(null)
+    }
+
     setItems(nextItems)
     notifyFilesChange(nextItems)
   }
@@ -244,20 +253,42 @@ export default function FileInput({
                     </span>
                   )}
                 </span>
-                <button
-                  className={`shrink-0 border-0 bg-transparent p-1 text-[8px] font-semibold hover:underline ${
-                    hasError ? 'text-danger' : 'text-primary-strong'
-                  }`}
-                  type="button"
-                  onClick={() => removeFile(item.id)}
-                >
-                  {hasError ? 'Quitar' : 'Eliminar'}
-                </button>
+                <span className="flex shrink-0 items-center gap-2">
+                  {!hasError && isPreviewable(item.file.type) && (
+                    <button
+                      className="grid size-8 place-items-center rounded-md border border-line bg-white text-primary-strong transition-colors hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      type="button"
+                      aria-label={`Previsualizar ${item.file.name}`}
+                      title="Previsualizar"
+                      onClick={() => setPreviewFile(item.file)}
+                    >
+                      <EyeIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                    </button>
+                  )}
+                  <button
+                    className={`grid size-8 place-items-center rounded-md border bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                      hasError
+                        ? 'border-danger-line text-danger hover:bg-danger-soft'
+                        : 'border-line text-body hover:bg-primary-soft hover:text-primary-strong'
+                    }`}
+                    type="button"
+                    aria-label={hasError ? `Quitar ${item.file.name}` : `Eliminar ${item.file.name}`}
+                    title={hasError ? 'Quitar archivo' : 'Eliminar archivo'}
+                    onClick={() => removeFile(item.id)}
+                  >
+                    <XMarkIcon className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                </span>
               </div>
             )
           })}
         </div>
       )}
+      <FilePreviewModal
+        file={previewFile}
+        open={previewFile !== null}
+        onClose={() => setPreviewFile(null)}
+      />
     </div>
   )
 }

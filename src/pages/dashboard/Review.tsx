@@ -1,29 +1,23 @@
 import {
   CheckIcon,
-  ChevronRightIcon,
   PaperAirplaneIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getRoleLabel } from '../../auth/userDisplay'
 import { useAuth } from '../../auth/useAuth'
-import DocumentActions from '../../components/documents/DocumentActions'
+import ProposalDocumentsPanel from '../../components/ProposalDocumentsPanel'
+import ProposalHistory from '../../components/ProposalHistory'
+import DocumentUploadDialog from '../../components/documents/DocumentUploadDialog'
+import FileInput from '../../components/forms/FileInput'
 import Alert from '../../components/Alert'
 import Modal from '../../components/Modal'
 import TextArea from '../../components/forms/TextArea'
-import {
-  formatDocumentType,
-  formatFileSize,
-  getFileIcon,
-  getFileTypeLabel,
-} from '../../utils/file'
-import type { ProposalDocument } from '../../types/proposal/ProposalDocument'
 import type {
   ReviewProposal,
   ReviewStatus,
 } from '../../types/proposal/ReviewProposal'
-import { getReviewProposals, updateProposalStatus } from '../../services/proposalService'
+import { getReviewProposals, updateProposalStatus, uploadProposalDocument } from '../../services/proposalService'
 
 /**
  * Bandeja de revisión: lista de propuestas, datos, documentos e historial, con
@@ -225,82 +219,6 @@ function DataRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-/**
- * Documentos adjuntos de una propuesta. Por defecto solo los vigentes; si hay
- * versiones anteriores aparece el control para mostrarlas. Cada documento
- * ofrece Descargar y, si es PDF o imagen, Previsualizar. Se monta con `key` por
- * propuesta, así el control de versiones anteriores se reinicia al cambiar.
- */
-function DocumentsPanel({ documents }: { documents: ProposalDocument[] }) {
-  const [showPrevious, setShowPrevious] = useState(false)
-  const currentDocuments = documents.filter((doc) => doc.es_vigente)
-  const previousCount = documents.length - currentDocuments.length
-  const visibleDocuments = showPrevious ? documents : currentDocuments
-
-  return (
-    <Panel
-      title="Documentos adjuntos"
-      subtitle={`${visibleDocuments.length} archivo${visibleDocuments.length === 1 ? '' : 's'}`}
-    >
-      {visibleDocuments.length > 0 ? (
-        <ul>
-          {visibleDocuments.map((doc) => {
-            const FileIcon = getFileIcon(doc.tipo_mime)
-            const typeLabel = formatDocumentType(doc.tipo_documento)
-
-            return (
-              <li
-                className="flex items-center gap-2.5 border-b border-line-soft px-4 py-2.5 last:border-0"
-                key={doc.uuid_archivo}
-              >
-                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary-strong">
-                  <FileIcon className="size-[18px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="truncate text-[11px] text-ink" title={doc.nombre_original}>
-                    {doc.nombre_original}
-                  </strong>
-                  <small className="text-[9px] text-muted">
-                    {getFileTypeLabel(doc.tipo_mime)} · {formatFileSize(doc.tamano_bytes)} · v
-                    {doc.numero_version}
-                    {typeLabel ? ` · ${typeLabel}` : ''}
-                  </small>
-                </span>
-                {!doc.es_vigente && (
-                  <span className="shrink-0 rounded bg-chip px-1.5 py-0.5 text-[9px] font-semibold text-body">
-                    Anterior
-                  </span>
-                )}
-                <DocumentActions doc={doc} />
-              </li>
-            )
-          })}
-        </ul>
-      ) : (
-        <p className="px-4 py-6 text-center text-[11px] text-muted">
-          {documents.length > 0
-            ? 'Esta propuesta no tiene documentos vigentes.'
-            : 'Esta propuesta no tiene documentos adjuntos.'}
-        </p>
-      )}
-
-      {previousCount > 0 && (
-        <div className="border-t border-line-soft px-4 py-2">
-          <button
-            className="border-0 bg-transparent p-0 text-[10px] font-semibold text-primary-strong hover:underline"
-            type="button"
-            aria-pressed={showPrevious}
-            onClick={() => setShowPrevious((visible) => !visible)}
-          >
-            {showPrevious
-              ? 'Ocultar versiones anteriores'
-              : `Mostrar versiones anteriores (${previousCount})`}
-          </button>
-        </div>
-      )}
-    </Panel>
-  )
-}
 
 function ActionDialog({
   config,
@@ -472,7 +390,6 @@ function ReviewActionsPanel({
 }
 
 export default function Review() {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const profileLabel = user ? getRoleLabel(user) : ''
   const roleCode =
@@ -483,6 +400,12 @@ export default function Review() {
   const [filter, setFilter] = useState<QueueFilter>('all')
   const [selectedId, setSelectedId] = useState('')
   const [observation, setObservation] = useState('')
+  const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([])
+  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false)
+  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false)
+  const [documentUploadError, setDocumentUploadError] = useState<string | null>(null)
+  const [documentInputKey, setDocumentInputKey] = useState(0)
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false)
   const [dialogAction, setDialogAction] = useState<ReviewAction | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
@@ -572,6 +495,60 @@ export default function Review() {
   const selectProposal = (id: string) => {
     setSelectedId(id)
     setObservation('')
+    setPendingDocumentFiles([])
+    setDocumentInputKey((key) => key + 1)
+    setIsDocumentUploadOpen(false)
+    setDocumentUploadError(null)
+    setIsInfoExpanded(false)
+  }
+
+  const openDocumentUpload = () => {
+    if (pendingDocumentFiles.length === 0) {
+      return
+    }
+
+    setDocumentUploadError(null)
+    setIsDocumentUploadOpen(true)
+  }
+
+  const confirmDocumentUpload = async () => {
+    if (pendingDocumentFiles.length === 0 || !selected) {
+      return
+    }
+
+    if (!user || !Number.isFinite(user.id_usuario)) {
+      setDocumentUploadError('No se encontró el usuario responsable de la carga.')
+      return
+    }
+
+    setIsUploadingDocuments(true)
+    setDocumentUploadError(null)
+
+    try {
+      for (const file of pendingDocumentFiles) {
+        await uploadProposalDocument(
+          selected.uuidExpediente,
+          file,
+          user.id_usuario,
+          'propuesta',
+        )
+      }
+
+      const refreshedProposals = await getReviewProposals(roleCode)
+      setProposals(refreshedProposals)
+      setSelectedId(selected.id)
+      setPendingDocumentFiles([])
+      setDocumentInputKey((key) => key + 1)
+      setIsDocumentUploadOpen(false)
+    } catch (error) {
+      setDocumentUploadError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible adjuntar los documentos.',
+      )
+    } finally {
+      setIsUploadingDocuments(false)
+    }
   }
 
   const openAction = (action: ReviewAction) => {
@@ -747,21 +724,7 @@ export default function Review() {
           <div className="flex min-w-0 flex-col gap-4">
             <Panel title={selected.title} subtitle={`${selected.id} · Registrado el ${selected.submittedAt}`}>
               <div className="flex flex-col gap-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <StatusBadge status={selected.status} />
-                  <button
-                    className="inline-flex h-[34px] items-center gap-1.5 rounded-md border border-line bg-white px-3 text-[10px] font-semibold text-body transition-colors hover:bg-primary-soft hover:text-primary-strong"
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        `/dashboard/proposals/detail?id=${encodeURIComponent(selected.id)}`,
-                      )
-                    }
-                  >
-                    Ver detalle
-                    <ChevronRightIcon className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-                  </button>
-                </div>
+                <StatusBadge status={selected.status} />
                 <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                   <DataRow label="Entidad o dependencia" value={selected.entity} />
                   <DataRow label="Tipo de postulante" value={selected.applicantType} />
@@ -770,45 +733,58 @@ export default function Review() {
                   <DataRow label="Contacto responsable" value={selected.contactName} />
                   <DataRow label="Correo electrónico" value={selected.contactEmail} />
                 </dl>
+                {isInfoExpanded && (
+                  <dl className="grid gap-x-6 gap-y-3 border-t border-line-soft pt-3 sm:grid-cols-2">
+                    <DataRow label="Cargo del contacto" value={selected.role ?? 'No especificado'} />
+                    <DataRow label="Teléfono" value={selected.phone ?? 'No especificado'} />
+                    <DataRow label="Fecha estimada de inicio" value={selected.startDate ?? 'No especificada'} />
+                    <div className="sm:col-span-2">
+                      <DataRow label="Justificación o necesidad" value={selected.justification ?? 'No especificada'} />
+                    </div>
+                  </dl>
+                )}
                 <div>
                   <h3 className="text-[9px] text-muted">Descripción u objeto</h3>
                   <p className="mt-0.5 text-[11px] leading-4 text-body">
                     {selected.description}
                   </p>
                 </div>
+                <button
+                  className="self-start border-0 bg-transparent p-0 text-[10px] font-semibold text-primary-strong hover:underline"
+                  type="button"
+                  aria-expanded={isInfoExpanded}
+                  onClick={() => setIsInfoExpanded((expanded) => !expanded)}
+                >
+                  {isInfoExpanded ? 'Ver menos' : 'Ver más'}
+                </button>
               </div>
             </Panel>
 
-            <DocumentsPanel key={selected.id} documents={selected.documents} />
+            <ProposalDocumentsPanel documents={selected.documents} />
 
-            <Panel title="Historial" subtitle="Observaciones y decisiones, de la más reciente a la más antigua">
-              <ol className="flex flex-col">
-                {[...selected.history].reverse().map((event) => (
-                  <li
-                    className="flex gap-3 border-b border-line-soft px-4 py-3 last:border-0"
-                    key={event.id}
-                  >
-                    <span
-                      className={`mt-1 size-2 shrink-0 rounded-full ${
-                        event.kind === 'observation' ? 'bg-muted' : 'bg-primary'
-                      }`}
-                      aria-hidden="true"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-[11px] leading-4 text-ink">
-                        <span className="mr-1.5 rounded bg-chip px-1.5 py-0.5 text-[9px] font-semibold text-body">
-                          {event.kind === 'observation' ? 'Observación' : 'Decisión'}
-                        </span>
-                        {event.text}
-                      </p>
-                      <small className="mt-0.5 block text-[9px] text-muted">
-                        {event.author} · {event.date}
-                      </small>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+            <Panel title="Cargar documentos" subtitle="Añade archivos a la propuesta">
+              <div className="p-3.5">
+                <FileInput
+                  key={documentInputKey}
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+                  acceptedFormatsLabel="PDF o imágenes"
+                  isUploading={isUploadingDocuments}
+                  maxSizeMb={20}
+                  multiple
+                  onFilesChange={setPendingDocumentFiles}
+                />
+                <button
+                  className="mt-3 h-[34px] rounded-md bg-primary px-3 text-[10px] font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                  disabled={pendingDocumentFiles.length === 0 || isUploadingDocuments}
+                  onClick={openDocumentUpload}
+                >
+                  Adjuntar documentos
+                </button>
+              </div>
             </Panel>
+
+            <ProposalHistory history={selected.history} />
           </div>
 
           <div className="xl:sticky xl:top-4">
@@ -822,6 +798,20 @@ export default function Review() {
           </div>
         </div>
       </div>
+
+      <DocumentUploadDialog
+        open={isDocumentUploadOpen}
+        files={pendingDocumentFiles}
+        isUploading={isUploadingDocuments}
+        error={documentUploadError}
+        onClose={() => {
+          if (!isUploadingDocuments) {
+            setIsDocumentUploadOpen(false)
+            setDocumentUploadError(null)
+          }
+        }}
+        onConfirm={() => void confirmDocumentUpload()}
+      />
 
       {activeConfig && (
         <ActionDialog
