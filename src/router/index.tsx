@@ -7,6 +7,7 @@ import NewProposal from '../pages/dashboard/NewProposal'
 import Home from '../pages/dashboard/Home'
 import Login from '../pages/Login'
 import Proposal from '../pages/dashboard/Proposal'
+import { isDevAuthMode } from '../config/env'
 import ProposalDetail from '../pages/dashboard/ProposalDetail'
 import Review from '../pages/dashboard/Review'
 import { DASHBOARD_BASE, appRoutes, type RouteId } from './routeConfig'
@@ -23,8 +24,15 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* /login solo existe en modo dev; en modo keycloak el login es de Keycloak. */}
+        <Route
+          path="/login"
+          element={isDevAuthMode ? <Login /> : <Navigate to={DASHBOARD_BASE} replace />}
+        />
+        <Route
+          path="/"
+          element={<Navigate to={isDevAuthMode ? '/login' : DASHBOARD_BASE} replace />}
+        />
 
         <Route element={<ProtectedRoute />}>
           <Route path={DASHBOARD_BASE} element={<DashboardLayout />}>

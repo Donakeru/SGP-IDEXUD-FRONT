@@ -57,12 +57,6 @@ export class AuthError extends Error {
   }
 }
 
-if (import.meta.env.PROD) {
-  console.warn(
-    '[authService] Autenticación temporal por ID de usuario activa. No debe desplegarse.',
-  )
-}
-
 export function parseUserId(value: string): number | null {
   const trimmed = value.trim()
 

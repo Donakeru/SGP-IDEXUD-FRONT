@@ -1,61 +1,30 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { authenticate } from '../services/authService'
-import { AuthContext, type AuthContextValue } from './AuthContext'
-import {
-  SESSION_STORAGE_KEY,
-  clearSession,
-  loadSession,
-  saveSession,
-} from './sessionPersistence'
-import type { User } from '../types/user/User'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { AuthLoadingScreen } from '../components/auth/AuthStateScreens'
+import ConfigErrorScreen from '../components/auth/ConfigErrorScreen'
+import { appConfig } from '../config/env'
+import DevAuthProvider from './DevAuthProvider'
 
+// Carga diferida: en modo `dev` no se descarga ni se ejecuta `keycloak-js`.
+const KeycloakAuthProvider = lazy(() => import('./KeycloakAuthProvider'))
+
+/**
+ * ÚNICO lugar donde se elige el proveedor de autenticación según
+ * `VITE_AUTH_MODE`. Ambos publican el mismo `AuthContext`, así que el resto de
+ * la app (`useAuth`, guards, pantallas) no sabe en qué modo corre.
+ */
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => loadSession())
-  const [hasSignedOut, setHasSignedOut] = useState(false)
+  if (appConfig.status === 'error') {
+    // Antes de crear el router o hacer cualquier petición.
+    return <ConfigErrorScreen config={appConfig} />
+  }
 
-  // Mantiene sincronizadas las pestañas: cerrar sesión en una cierra en todas.
-  useEffect(() => {
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === null || event.key === SESSION_STORAGE_KEY) {
-        setUser(loadSession())
-      }
-    }
+  if (appConfig.authMode === 'dev') {
+    return <DevAuthProvider>{children}</DevAuthProvider>
+  }
 
-    window.addEventListener('storage', handleStorage)
-
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
-
-  const login = useCallback<AuthContextValue['login']>(
-    async (credentials, options) => {
-      const authenticatedUser = await authenticate(credentials)
-
-      saveSession(authenticatedUser, options?.remember ?? false)
-      setHasSignedOut(false)
-      setUser(authenticatedUser)
-
-      return authenticatedUser
-    },
-    [],
+  return (
+    <Suspense fallback={<AuthLoadingScreen message="Cargando…" />}>
+      <KeycloakAuthProvider settings={appConfig.keycloak}>{children}</KeycloakAuthProvider>
+    </Suspense>
   )
-
-  const logout = useCallback(() => {
-    clearSession()
-    setHasSignedOut(true)
-    setUser(null)
-  }, [])
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      roles: user ? user.roles.map((role) => role.codigo) : [],
-      isAuthenticated: user !== null,
-      hasSignedOut,
-      login,
-      logout,
-    }),
-    [hasSignedOut, login, logout, user],
-  )
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

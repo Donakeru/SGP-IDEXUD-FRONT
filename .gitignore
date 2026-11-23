@@ -16,6 +16,7 @@
 # Environment Variables (CRITICAL: Never commit secrets)
 .env
 .env.example
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
@@ -50,4 +51,4 @@ figma_base.make
 figma_base/*
 
 # Specs de trabajo (requirements, design, tasks) generadas con Kiro
-docs/spec/
+docs/
