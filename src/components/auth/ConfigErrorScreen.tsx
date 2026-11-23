@@ -7,8 +7,7 @@ type ConfigErrorScreenProps = {
 }
 
 /**
- * Pantalla bloqueante: la configuración no es válida (modo desconocido,
- * variables de Keycloak faltantes o modo `dev` en producción). Se muestra
+ * Pantalla bloqueante: faltan variables de entorno obligatorias. Se muestra
  * antes de crear el router, la sesión o cualquier petición, y no ofrece
  * acciones para continuar.
  */

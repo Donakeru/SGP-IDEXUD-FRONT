@@ -5,9 +5,7 @@ import RequireCapability from '../components/auth/RequireCapability'
 import DashboardLayout from '../layout/DashboardLayout'
 import NewProposal from '../pages/dashboard/NewProposal'
 import Home from '../pages/dashboard/Home'
-import Login from '../pages/Login'
 import Proposal from '../pages/dashboard/Proposal'
-import { isDevAuthMode } from '../config/env'
 import ProposalDetail from '../pages/dashboard/ProposalDetail'
 import Review from '../pages/dashboard/Review'
 import { DASHBOARD_BASE, appRoutes, type RouteId } from '../config/routes'
@@ -24,15 +22,7 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* /login solo existe en modo dev; en modo keycloak el login es de Keycloak. */}
-        <Route
-          path="/login"
-          element={isDevAuthMode ? <Login /> : <Navigate to={DASHBOARD_BASE} replace />}
-        />
-        <Route
-          path="/"
-          element={<Navigate to={isDevAuthMode ? '/login' : DASHBOARD_BASE} replace />}
-        />
+        <Route path="/" element={<Navigate to={DASHBOARD_BASE} replace />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path={DASHBOARD_BASE} element={<DashboardLayout />}>
@@ -53,6 +43,7 @@ export default function AppRouter() {
           </Route>
         </Route>
 
+        {/* Cualquier otra ruta lleva al inicio. El inicio de sesión lo hace Keycloak. */}
         <Route path="*" element={<Navigate to={DASHBOARD_BASE} replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,4 +1,4 @@
-/** Rol tal como lo devuelve el backend (`roles[]` en `GET /users/{id_usuario}`). */
+/** Rol tal como lo devuelve el backend (`roles[]` en `GET /users/me`). */
 export type Role = {
   codigo: string
   nombre: string

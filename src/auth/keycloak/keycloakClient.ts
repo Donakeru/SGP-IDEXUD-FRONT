@@ -12,8 +12,8 @@ import type { TokenProvider } from '../../services/http/tokenProvider'
  * - Si la inicialización falla se descarta la promesa y la instancia, para poder
  *   reintentar sin recargar la página.
  *
- * Los tokens los guarda `keycloak-js` en memoria; no se escriben en
- * `localStorage` ni `sessionStorage`.
+ * Los tokens los guarda `keycloak-js` solo en memoria: la aplicación no los
+ * escribe en ningún almacenamiento del navegador.
  */
 
 let instance: Keycloak | null = null

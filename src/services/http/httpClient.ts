@@ -15,8 +15,6 @@ export const DEFAULT_TIMEOUT_MS = 30_000
 export const TRANSFER_TIMEOUT_MS = 120_000
 
 type RequestExtras = {
-  /** `false` envía la petición sin token (por ejemplo `GET /health`). Por defecto `true`. */
-  auth?: boolean
   /** Tiempo máximo en ms. Por defecto 30 s, o 120 s si el cuerpo es `FormData`. */
   timeoutMs?: number
   /**
@@ -126,7 +124,7 @@ const readDetail = async (response: Response) => {
   }
 }
 
-/** Si no hay token válido, se redirige al login y la petición no se envía. */
+/** Si no hay token válido, se redirige a Keycloak y la petición no se envía. */
 const obtainToken = async (provider: TokenProvider, get: () => Promise<string>) => {
   try {
     return await get()
@@ -139,18 +137,17 @@ const obtainToken = async (provider: TokenProvider, get: () => Promise<string>) 
 /**
  * Único punto de salida hacia el backend.
  *
- * Con un `TokenProvider` registrado (modo `keycloak`): renueva el token si hace
+ * Con el `TokenProvider` de la sesión de Keycloak: renueva el token si hace
  * falta y lo adjunta; ante un 401 renueva y reintenta UNA vez (si vuelve a
  * fallar, `login()`); ante un 403 no reintenta y avisa al usuario con el
- * `detail`. Sin proveedor (modo `dev`) no se envía ningún encabezado de
- * autenticación y el comportamiento es el de siempre.
+ * `detail`.
  */
 const execute = async (endpoint: string, options: HttpRequestOptions): Promise<Attempt> => {
   const url = buildUrl(endpoint)
-  const { auth = true, timeoutMs, handleAuthErrors = true, ...init } = options
+  const { timeoutMs, handleAuthErrors = true, ...init } = options
   const timeout =
     timeoutMs ?? (init.body instanceof FormData ? TRANSFER_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
-  const provider = auth ? getTokenProvider() : null
+  const provider = getTokenProvider()
 
   const token = provider ? await obtainToken(provider, provider.getToken) : null
   let attempt = await send(url, init, token, timeout)

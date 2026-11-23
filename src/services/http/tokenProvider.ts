@@ -2,8 +2,8 @@
  * Contrato entre el cliente HTTP y el proveedor de autenticación. El cliente
  * HTTP no conoce Keycloak: solo pide el token a quien esté registrado.
  *
- * En modo `dev` no hay ningún proveedor registrado, así que no se envía el
- * encabezado `Authorization`.
+ * El proveedor de autenticación lo registra cuando la sesión de Keycloak está
+ * lista y lo retira al cerrar sesión.
  */
 export type TokenProvider = {
   /** Renueva el token si le quedan menos de 30 s y devuelve el token vigente. */
