@@ -1,9 +1,9 @@
 import { ShieldExclamationIcon } from '@heroicons/react/24/outline'
-import Button from '../components/Button'
-import EmptyState from '../components/EmptyState'
-import { getRoleLabel } from '../auth/userDisplay'
-import { useAuth } from '../auth/useAuth'
-import logo from '../assets/logo_idexud.png'
+import Button from '../Button'
+import EmptyState from '../EmptyState'
+import { getRoleLabel } from '../../auth/userDisplay'
+import { useAuth } from '../../auth/useAuth'
+import logo from '../../assets/logo_idexud.png'
 
 /** Pantalla completa para usuarios autenticados sin ningún rol configurado. */
 export default function NoAccess() {

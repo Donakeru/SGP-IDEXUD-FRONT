@@ -16,7 +16,7 @@ type AuthStatusScreenProps = {
 
 /**
  * Pantalla completa de estado de la sesión (cargando, error, inactivo,
- * configuración). Usa el mismo aspecto que `pages/NoAccess`.
+ * configuración). Usa el mismo aspecto que `components/auth/NoAccess`.
  *
  * TODO: unificar con `NoAccess`, que hoy repite este mismo marcado.
  */

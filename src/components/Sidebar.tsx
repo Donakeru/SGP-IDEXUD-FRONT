@@ -12,7 +12,7 @@ import {
   type AppRouteConfig,
   type NavGroup,
   type NavIconName,
-} from '../router/routeConfig'
+} from '../config/routes'
 
 type SidebarItem = {
   key: string

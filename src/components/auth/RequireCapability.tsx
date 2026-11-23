@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { usePermissions } from '../../auth/usePermissions'
-import AccessDenied from '../../pages/AccessDenied'
+import AccessDenied from './AccessDenied'
 import type { Capability } from '../../types/auth/Capability'
 
 type RequireCapabilityProps = {

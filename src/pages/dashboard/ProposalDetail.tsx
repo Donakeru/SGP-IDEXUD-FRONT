@@ -53,7 +53,8 @@ function toComment(proposalUuid: string, comment: ProposalDetailComment): Commen
     id: String(comment.id),
     proposalId: proposalUuid,
     text: comment.content,
-    category: 'Visto bueno',
+    category: comment.category,
+    documentName: comment.documentName ?? undefined,
     createdAt: comment.createdAt,
     author: { id: 0, name: comment.author, role: 'Usuario' },
   }
@@ -214,6 +215,7 @@ export default function ProposalDetail() {
       proposalUuid,
       input.text,
       user.id_usuario,
+      { category: input.category, documentUuid: input.documentUuid },
     )
 
     setComments((current) => [
@@ -362,7 +364,10 @@ export default function ProposalDetail() {
           )}
           <Can capability="comentar">
             <CommentComposer
-              documents={detail.documents.map((document) => document.name)}
+              documents={detail.documents.map((document) => ({
+                uuid: document.uuid_archivo,
+                name: document.name,
+              }))}
               onSubmit={publishComment}
             />
           </Can>

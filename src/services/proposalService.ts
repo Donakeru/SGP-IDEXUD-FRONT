@@ -1,4 +1,6 @@
+import { notifyForbidden } from './http/forbiddenNotifier'
 import { httpClient } from './http/httpClient'
+import { COMMENT_CATEGORIES, type CommentCategory } from '../types/comment/Comment'
 import type { CreateProposalDto } from '../types/proposal/CreateProposalDto'
 import type { ProposalDocument } from '../types/proposal/ProposalDocument'
 import type { ProposalListResponse } from '../types/proposal/ProposalListResponse'
@@ -245,7 +247,26 @@ export async function updateProposalStatus(
   )
 
   if (!response.ok) {
-    throw new Error(`No fue posible actualizar el estado (${response.status}).`)
+    // `detail` solo se usa si es texto (un 422 trae una lista; un cuerpo vacío o
+    // que no es JSON no trae nada).
+    let detail: string | undefined
+
+    try {
+      const body: unknown = JSON.parse(await response.text())
+
+      if (isRecord(body) && typeof body.detail === 'string' && body.detail.trim()) {
+        detail = body.detail
+      }
+    } catch {
+      detail = undefined
+    }
+
+    // El 403 ya lo avisa httpClient; el 409 usa el mismo aviso global.
+    if (response.status === 409) {
+      notifyForbidden(detail)
+    }
+
+    throw new Error(detail ?? `No fue posible actualizar el estado (${response.status}).`)
   }
 
   return response.json() as Promise<UpdateProposalStatusResponse>
@@ -288,6 +309,9 @@ function normalizeDetailComment(value: unknown): ProposalDetailComment | null {
     content: value.content,
     author: value.author,
     createdAt: value.createdAt,
+    category: COMMENT_CATEGORIES.find((option) => option === value.category) ?? 'Visto bueno',
+    documentUuid: typeof value.documentUuid === 'string' ? value.documentUuid : null,
+    documentName: typeof value.documentName === 'string' ? value.documentName : null,
   }
 }
 
@@ -360,6 +384,7 @@ export async function createProposalComment(
   uuidExpediente: string,
   content: string,
   idUsuario: number,
+  options: { category?: CommentCategory; documentUuid?: string } = {},
   signal?: AbortSignal,
 ): Promise<ProposalDetailComment> {
   const uuid = uuidExpediente.trim()
@@ -371,7 +396,12 @@ export async function createProposalComment(
 
   const response = await httpClient.postJson(
     `/proposal/${encodeURIComponent(uuid)}/comments`,
-    { content: text, idUsuario },
+    {
+      content: text,
+      idUsuario,
+      category: options.category,
+      documentUuid: options.documentUuid,
+    },
     signal,
   )
   const data = await parseApiResponse<unknown>(

@@ -13,7 +13,7 @@ import Button from '../components/Button'
 import TextField from '../components/forms/TextField'
 import { useAuth } from '../auth/useAuth'
 import { usePermissions } from '../auth/usePermissions'
-import { getDefaultPath } from '../router/routeConfig'
+import { getDefaultPath } from '../config/routes'
 import { AuthError, parseUserId } from '../services/authService'
 import logo from '../assets/logo_idexud.png'
 

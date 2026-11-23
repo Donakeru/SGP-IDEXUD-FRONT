@@ -102,15 +102,13 @@ export default function NewProposal() {
 
     const loadProposalLists = async () => {
       try {
-        const [applicantTypes, proposalTypes] = await Promise.all([
+        // TODO: estas listas se piden pero todavía no alimentan los select del
+        // formulario (antes solo se mostraban en consola). Conectarlas a los
+        // select de tipo de postulante y de propuesta, o quitar esta petición.
+        await Promise.all([
           getList('tipo_postulante', controller.signal),
           getList('tipo_propuesta', controller.signal),
         ])
-
-        console.log('Listas de propuesta recibidas:', {
-          tipo_postulante: applicantTypes,
-          tipo_propuesta: proposalTypes,
-        })
       } catch (error) {
         if (!controller.signal.aborted) {
           console.error('No fue posible cargar las listas de propuesta:', error)
@@ -181,7 +179,6 @@ export default function NewProposal() {
     setSubmissionError(null)
 
     try {
-      console.log(proposalDto)
       await createProposal(proposalDto)
       setConfirmationOpen(false)
       setNotification('success')

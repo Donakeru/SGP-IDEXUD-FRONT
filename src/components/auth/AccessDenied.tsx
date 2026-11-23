@@ -1,9 +1,9 @@
 import { LockClosedIcon } from '@heroicons/react/24/outline'
 import { useNavigate } from 'react-router-dom'
-import Button from '../components/Button'
-import EmptyState from '../components/EmptyState'
-import { usePermissions } from '../auth/usePermissions'
-import { getDefaultPath } from '../router/routeConfig'
+import Button from '../Button'
+import EmptyState from '../EmptyState'
+import { usePermissions } from '../../auth/usePermissions'
+import { getDefaultPath } from '../../config/routes'
 
 /** Se muestra dentro del layout cuando el usuario no tiene la capacidad de la ruta. */
 export default function AccessDenied() {

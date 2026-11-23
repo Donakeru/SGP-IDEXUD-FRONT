@@ -10,7 +10,7 @@ import Proposal from '../pages/dashboard/Proposal'
 import { isDevAuthMode } from '../config/env'
 import ProposalDetail from '../pages/dashboard/ProposalDetail'
 import Review from '../pages/dashboard/Review'
-import { DASHBOARD_BASE, appRoutes, type RouteId } from './routeConfig'
+import { DASHBOARD_BASE, appRoutes, type RouteId } from '../config/routes'
 
 const routeElements: Record<RouteId, ReactNode> = {
   home: <Home />,

@@ -24,7 +24,7 @@ import { getReviewProposals, updateProposalStatus, uploadProposalDocument } from
  * acceso al detalle de cada propuesta.
  *
  * Qué acciones se muestran depende del estado de la propuesta, no del usuario.
- * Se ve con la capacidad `ver_revision` (ver router/routeConfig.ts).
+ * Se ve con la capacidad `ver_revision` (ver config/routes.ts).
  */
 
 const DECISION_ACTIONS_ENABLED = true

@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // `docs` contiene la plantilla de IDEXUD y los specs: no son código del proyecto.
+  globalIgnores(['dist', 'docs']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

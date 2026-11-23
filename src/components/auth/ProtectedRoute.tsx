@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { usePermissions } from '../../auth/usePermissions'
-import NoAccess from '../../pages/NoAccess'
+import NoAccess from './NoAccess'
 
 /**
  * Ruta de layout para todo lo que exige sesión:

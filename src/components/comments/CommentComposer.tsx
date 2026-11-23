@@ -7,12 +7,13 @@ import TextArea from '../forms/TextArea'
 import {
   COMMENT_CATEGORIES,
   type CommentCategory,
+  type CommentDocumentOption,
   type NewCommentInput,
 } from '../../types/comment/Comment'
 
 type CommentComposerProps = {
-  /** Nombres de documentos para el selector "Documento relacionado". */
-  documents?: readonly string[]
+  /** Documentos para el selector "Documento relacionado" (`uuid` = `uuid_archivo`). */
+  documents?: readonly CommentDocumentOption[]
   /**
    * Publica el comentario. Si la promesa se rechaza, el composer conserva lo
    * escrito y muestra el mensaje del error.
@@ -35,7 +36,7 @@ export default function CommentComposer({
   const errorId = `${textId}-error`
   const [text, setText] = useState('')
   const [category, setCategory] = useState<CommentCategory>('Visto bueno')
-  const [documentName, setDocumentName] = useState('')
+  const [documentUuid, setDocumentUuid] = useState('')
   const [pendingInput, setPendingInput] = useState<NewCommentInput | null>(null)
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -48,11 +49,14 @@ export default function CommentComposer({
       return
     }
 
+    const selectedDocument = documents.find((document) => document.uuid === documentUuid)
+
     setError(null)
     setPendingInput({
       text: text.trim(),
       category,
-      documentName: documentName || undefined,
+      documentName: selectedDocument?.name,
+      documentUuid: selectedDocument?.uuid,
     })
     setIsConfirmationOpen(true)
   }
@@ -128,14 +132,14 @@ export default function CommentComposer({
             </span>
             <Select
               className="!min-h-[30px] h-[30px] px-2 text-[8px]"
-              value={documentName}
+              value={documentUuid}
               disabled={isSubmitting}
-              onChange={(event) => setDocumentName(event.target.value)}
+              onChange={(event) => setDocumentUuid(event.target.value)}
             >
               <option value="">Ninguno</option>
-              {documents.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {documents.map((document) => (
+                <option key={document.uuid} value={document.uuid}>
+                  {document.name}
                 </option>
               ))}
             </Select>

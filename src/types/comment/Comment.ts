@@ -32,4 +32,13 @@ export type NewCommentInput = {
   text: string
   category: CommentCategory
   documentName?: string
+  /** `uuid_archivo` del documento relacionado, el que se envía al backend. */
+  documentUuid?: string
+}
+
+/** Opción del selector "Documento relacionado". */
+export type CommentDocumentOption = {
+  /** `uuid_archivo` del documento. */
+  uuid: string
+  name: string
 }
